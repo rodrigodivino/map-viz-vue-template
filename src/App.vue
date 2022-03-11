@@ -1,9 +1,11 @@
 <script lang="ts">
+import 'leaflet/dist/leaflet.css';
 import './assets/base.css';
-import application from "./components/application.vue";
+
+import ApplicationRoot from "./components/application-root.vue";
 
 export default {
-  components: {application},
+  components: {ApplicationRoot},
   data() {
     return {};
   }
@@ -12,7 +14,7 @@ export default {
 
 <template>
   <div class="app-body">
-    <Application/>
+    <ApplicationRoot/>
   </div>
 </template>
 
@@ -22,15 +24,5 @@ export default {
   height: 100vh;
   background-color: #42b983;
   overflow: hidden;
-}
-
-
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin: 0;
 }
 </style>
