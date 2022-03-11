@@ -2,6 +2,12 @@ module.exports = {
   env: {
     node: true,
   },
-  extends: ["eslint:recommended", "plugin:vue/vue3-recommended", "prettier"],
+  extends: [
+    "plugin:vue/vue3-recommended",
+    "eslint:recommended",
+    "@vue/typescript/recommended",
+    "prettier",
+  ],
+  plugins: [],
   rules: {},
 };
