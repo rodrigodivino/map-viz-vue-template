@@ -3,11 +3,13 @@ import * as L from "leaflet";
 import {defineComponent} from "vue";
 
 declare interface LeafletMapState {
-  map?: L.Map
+  map?: L.Map;
 }
 
 export default defineComponent<{}, LeafletMapState>({
   name: "LeafletMap",
+
+  
   data(): LeafletMapState {
     return {
       map: undefined

@@ -1,0 +1,13 @@
+{
+  "env": {
+    "node": true
+  },
+  "extends": [
+    "plugin:vue/vue3-recommended", //from eslint-plugin-vue
+    "eslint:recommended", // from eslint
+    "@vue/eslint-config-typescript/recommended" // from @vue/eslint-config-typescript
+  ],
+  "rules": {
+    "quotes": ["warn", "double"]
+  }
+}
