@@ -3,10 +3,10 @@
     "node": true
   },
   "extends": [
+    "eslint:recommended", // from eslint,
     "plugin:vue/vue3-recommended", //from eslint-plugin-vue
-    "eslint:recommended", // from eslint
     "@vue/eslint-config-typescript/recommended", // from @vue/eslint-config-typescript
-    "@vue/eslint-config-prettier" // from @vue/eslint-config-prettier
+    "@vue/eslint-config-prettier" // from @vue/eslint-config-prettier, must be last
   ],
   "plugins": ["prettier"],
   "rules": {
