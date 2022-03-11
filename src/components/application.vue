@@ -1,13 +1,13 @@
 <script>
 export default {
-  name: "Application"
+  name: "application"
 }
 </script>
 
 <template>
   <div class="application">
     <header class="l-centered header">Header</header>
-    <main class="s-white l-centered main">Main</main>
+    <main class="l-centered main">Main</main>
     <footer class="l-centered footer">Footer</footer>
   </div>
 </template>
@@ -17,10 +17,6 @@ export default {
     max-width: 100%;
     width: 800px;
     margin: 0 auto;
-  }
-
-  .s-white {
-    background-color: #FFF;
   }
 
   .application {

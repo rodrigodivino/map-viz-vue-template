@@ -1,9 +1,9 @@
 <script lang="ts">
 import './assets/base.css';
-import Application from "./components/application.vue";
+import application from "./components/application.vue";
 
 export default {
-  components: {Application},
+  components: {application},
   data() {
     return {};
   }
