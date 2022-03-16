@@ -1,7 +1,8 @@
 <script lang="ts">
 import * as L from "leaflet";
-import { CSSProperties, defineComponent } from "vue";
-import { getMapZoomAnimMimic } from "../hooks/get-map-zoom-anim-mimic";
+import { LatLng } from "leaflet";
+import { defineComponent } from "vue";
+import { geoMercator, GeoProjection } from "d3";
 
 export default defineComponent({
   name: "LeafletMap",
@@ -19,26 +20,31 @@ export default defineComponent({
   data() {
     return {
       map: undefined as L.Map | undefined,
-      center: [51.505, -0.09] as L.LatLngExpression,
-      centerPx: { x: 0, y: 0 } as { x: number; y: number },
-      zoomMimic: { transform: "" } as CSSProperties,
-      zoomAnimMimicScaleInverse: {} as CSSProperties,
-      flag: false as boolean,
+      pointCoords: [51.505, -0.09] as L.LatLngExpression,
+      pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
+      projection: geoMercator() as GeoProjection,
+      tl: { x: 0, y: 0 } as { x: number; y: number },
+      br: { x: 0, y: 0 } as { x: number; y: number },
     };
   },
   computed: {
-    markerPane(): HTMLElement | undefined {
-      return this.map?.getPane("markerPane");
+    svgPane(): HTMLElement | undefined {
+      return this.map?.getPane("svgPane");
+    },
+    canvasPane(): HTMLElement | undefined {
+      return this.map?.getPane("canvasPane");
     },
   },
   mounted() {
-    const center = [51.505, -0.09] as L.LatLngExpression;
+    const center = [51.505, -0.09] as L.LatLngTuple;
 
     this.map = L.map(this.$refs.map as HTMLElement).setView(
       center,
       13
     ) as L.Map;
 
+    this.map.createPane("canvasPane").style.zIndex = "601";
+    this.map.createPane("svgPane").style.zIndex = "602";
     this.map.createPane("labelPane").style.zIndex = "850";
 
     L.tileLayer(
@@ -72,70 +78,64 @@ export default defineComponent({
 
     L.control.scale().addTo(this.map as L.Map);
 
-    this.centerPx = this.map?.latLngToLayerPoint(this.center) ?? {
-      x: 0,
-      y: 0,
+    const setCenterPx = () => {
+      this.pointInLayer = this.map?.latLngToLayerPoint(this.pointCoords) ?? {
+        x: 0,
+        y: 0,
+      };
     };
 
-    this.map.on("viewreset", () => {
-      this.centerPx = this.map?.latLngToLayerPoint(this.center) ?? {
-        x: 0,
-        y: 0,
-      };
-      this.$emit("viewreset");
-    });
-
     this.map.on("zoomanim", (e) => {
-      console.log("e", e);
-      this.flag = true;
-      const zoomAnimMimic = getMapZoomAnimMimic(e, this.map as L.Map, center);
-      this.zoomMimic = zoomAnimMimic.zoomAnimMimic;
-      this.zoomAnimMimicScaleInverse = zoomAnimMimic.zoomAnimMimicScaleInverse;
-    });
-
-    this.map.on("zoomend", () => {
-      this.flag = false;
-      const zoomAnimMimic = getMapZoomAnimMimic(
-        undefined,
-        this.map as L.Map,
-        center
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      this.pointInLayer = this.map?._latLngToNewLayerPoint(
+        this.pointCoords,
+        e.zoom,
+        e.center
       );
-      this.zoomMimic = zoomAnimMimic.zoomAnimMimic;
-      this.zoomAnimMimicScaleInverse = zoomAnimMimic.zoomAnimMimicScaleInverse;
-
-      this.$emit("viewreset");
-
-      this.centerPx = this.map?.latLngToLayerPoint(this.center) ?? {
-        x: 0,
-        y: 0,
-      };
-      this.$emit("viewreset");
     });
+    this.map.on("viewreset", () => setCenterPx());
+    this.map.on("zoomend", () => setCenterPx());
+    setCenterPx();
+
+    const centerBounds = new LatLng(...center).toBounds(5000);
+    this.tl = this.map.latLngToLayerPoint(centerBounds.getNorthWest());
+    this.br = this.map.latLngToLayerPoint(centerBounds.getSouthEast());
   },
 });
 </script>
 
 <template>
   <div id="map" ref="map" class="l-fit" />
-  <Teleport v-if="markerPane" :to="markerPane">
-    <div
-      class="wrapper"
-      :style="{
-        ...zoomMimic,
-        transform: `translate(${centerPx.x}px,${centerPx.y}px)${zoomMimic.transform}`,
-      }"
-    ></div>
+  <Teleport v-if="svgPane" :to="svgPane">
+    <svg
+      :height="br.y - tl.y"
+      :style="{ transform: `translate(${tl.x}px,${tl.y}px)` }"
+      :width="br.x - tl.x"
+    >
+      <g class="absolute-coordinates">
+        <rect
+          :height="br.y - tl.y"
+          :width="br.x - tl.x"
+          fill="lightgray"
+        ></rect>
+      </g>
+      <g
+        :transform="`translate(${-tl.x}, ${-tl.y})`"
+        class="projected-coordinates"
+      >
+        <g
+          :style="{
+            transition: 'transform 0.25s cubic-bezier(0,0,0.25,1)',
+            transform: `translate(${pointInLayer.x}px,${pointInLayer.y}px)`,
+          }"
+        >
+          <text>Text Placeholder</text>
+          <circle r="10"></circle>
+        </g>
+      </g>
+    </svg>
   </Teleport>
 </template>
 
-<style scoped>
-.wrapper {
-  width: 500px;
-  height: 500px;
-  background-color: #3777ae;
-}
-
-.inner-debug-div {
-  background-color: rebeccapurple;
-}
-</style>
+<style scoped></style>
