@@ -21,7 +21,7 @@ export default defineComponent({
       map: undefined as L.Map | undefined,
       center: [51.505, -0.09] as L.LatLngExpression,
       centerPx: { x: 0, y: 0 } as { x: number; y: number },
-      zoomMimic: {} as CSSProperties,
+      zoomMimic: { transform: "" } as CSSProperties,
       zoomAnimMimicScaleInverse: {} as CSSProperties,
       flag: false as boolean,
     };
@@ -119,22 +119,19 @@ export default defineComponent({
   <div id="map" ref="map" class="l-fit" />
   <Teleport v-if="markerPane" :to="markerPane">
     <div
-      :class="{
-        'debug-div': true,
-      }"
+      class="wrapper"
       :style="{
-        transform: `translate(${centerPx.x}px,${centerPx.y}px)`,
+        ...zoomMimic,
+        transform: `translate(${centerPx.x}px,${centerPx.y}px)${zoomMimic.transform}`,
       }"
-    >
-      <div :class="['inner-debug-div']" :style="zoomMimic">Hello</div>
-    </div>
+    ></div>
   </Teleport>
 </template>
 
 <style scoped>
-.debug-div {
-  width: 200px;
-  height: 200px;
+.wrapper {
+  width: 500px;
+  height: 500px;
   background-color: #3777ae;
 }
 

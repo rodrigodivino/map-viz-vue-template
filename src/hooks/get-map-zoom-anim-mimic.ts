@@ -32,8 +32,8 @@ export const getMapZoomAnimMimic = (
 
     return {
       zoomAnimMimic: {
-        transform: `translate(${diffX}px, ${diffY}px)`,
-        // TODO: see if this can be replaced with leaflet-zoom-anim class at target
+        transform: `translate(${diffX}px, ${diffY}px)scale(${2 ** zoomDiff})`,
+        transformOrigin: "top left",
         transition: "transform 0.25s cubic-bezier(0,0,0.25,1)",
       },
       zoomAnimMimicScaleInverse: {
