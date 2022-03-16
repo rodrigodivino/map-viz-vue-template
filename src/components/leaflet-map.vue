@@ -2,29 +2,31 @@
 import * as L from "leaflet";
 import { defineComponent } from "vue";
 
-declare interface LeafletMapState {
-  map?: L.Map;
-  markerPane?: HTMLElement;
-}
-
-export default defineComponent<{}, LeafletMapState>({
+export default defineComponent({
   name: "LeafletMap",
+  emits: ["move"],
 
-  data(): LeafletMapState {
+  data() {
     return {
-      map: undefined,
-      markerPane: undefined,
+      map: undefined as L.Map | undefined,
+      center: [51.505, -0.09] as L.LatLngExpression,
+      centerPx: { x: 0, y: 0 } as { x: number; y: number },
     };
   },
+  computed: {
+    markerPane(): HTMLElement | undefined {
+      return this.map?.getPane("markerPane");
+    },
+  },
   mounted() {
+    const center = [51.505, -0.09] as L.LatLngExpression;
+
     this.map = L.map(this.$refs.map as HTMLElement).setView(
-      [51.505, -0.09],
+      center,
       13
     ) as L.Map;
 
     this.map.createPane("labelPane").style.zIndex = "850";
-
-    this.markerPane = this.map.getPane("markerPane");
 
     L.tileLayer(
       "https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.{ext}",
@@ -38,7 +40,7 @@ export default defineComponent<{}, LeafletMapState>({
         // @ts-ignore
         ext: "png",
       }
-    ).addTo(this.map);
+    ).addTo(this.map as L.Map);
 
     L.tileLayer(
       "https://stamen-tiles-{s}.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}{r}.{ext}",
@@ -53,14 +55,22 @@ export default defineComponent<{}, LeafletMapState>({
         // @ts-ignore
         ext: "png",
       }
-    ).addTo(this.map);
+    ).addTo(this.map as L.Map);
 
-    L.control.scale().addTo(this.map);
+    L.control.scale().addTo(this.map as L.Map);
 
-    console.log(
-      "this.map.getPane('markerPane')",
-      this.map.getPane("markerPane")
-    );
+    this.centerPx = this.map?.latLngToLayerPoint(this.center) ?? {
+      x: 0,
+      y: 0,
+    };
+
+    this.map.on("move", () => {
+      this.$emit("move");
+      this.centerPx = this.map?.latLngToLayerPoint(this.center) ?? {
+        x: 0,
+        y: 0,
+      };
+    });
   },
 });
 </script>
@@ -68,8 +78,24 @@ export default defineComponent<{}, LeafletMapState>({
 <template>
   <div id="map" ref="map" class="l-fit" />
   <Teleport v-if="markerPane" :to="map.getPane('markerPane')">
-    <span>Hello World</span>
+    <div class="marker-pane-wrapper">
+      <div
+        class="debug-div"
+        :style="{
+          transform: `translate(${centerPx.x}px,${centerPx.y}px)`,
+        }"
+      ></div>
+    </div>
   </Teleport>
 </template>
 
-<style scoped></style>
+<style scoped>
+.debug-div {
+  width: 10px;
+  height: 10px;
+  background-color: #3777ae;
+}
+
+.marker-pane-wrapper {
+}
+</style>
