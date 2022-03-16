@@ -23,6 +23,7 @@ export default defineComponent({
       centerPx: { x: 0, y: 0 } as { x: number; y: number },
       zoomMimic: {} as CSSProperties,
       zoomAnimMimicScaleInverse: {} as CSSProperties,
+      flag: false as boolean,
     };
   },
   computed: {
@@ -85,13 +86,20 @@ export default defineComponent({
     });
 
     this.map.on("zoomanim", (e) => {
-      const zoomAnimMimic = getMapZoomAnimMimic(e, this.map as L.Map);
+      console.log("e", e);
+      this.flag = true;
+      const zoomAnimMimic = getMapZoomAnimMimic(e, this.map as L.Map, center);
       this.zoomMimic = zoomAnimMimic.zoomAnimMimic;
       this.zoomAnimMimicScaleInverse = zoomAnimMimic.zoomAnimMimicScaleInverse;
     });
 
     this.map.on("zoomend", () => {
-      const zoomAnimMimic = getMapZoomAnimMimic(undefined, this.map as L.Map);
+      this.flag = false;
+      const zoomAnimMimic = getMapZoomAnimMimic(
+        undefined,
+        this.map as L.Map,
+        center
+      );
       this.zoomMimic = zoomAnimMimic.zoomAnimMimic;
       this.zoomAnimMimicScaleInverse = zoomAnimMimic.zoomAnimMimicScaleInverse;
 
@@ -117,7 +125,9 @@ export default defineComponent({
       :style="{
         transform: `translate(${centerPx.x}px,${centerPx.y}px)`,
       }"
-    ></div>
+    >
+      <div :class="['inner-debug-div']" :style="zoomMimic">Hello</div>
+    </div>
   </Teleport>
 </template>
 

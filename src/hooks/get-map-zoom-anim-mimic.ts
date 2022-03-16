@@ -3,22 +3,28 @@ import { CSSProperties } from "vue";
 
 export const getMapZoomAnimMimic = (
   zoomAnim: ZoomAnimEvent | undefined,
-  map: LMap | undefined
+  map: LMap | undefined,
+  reference: LatLngExpression
 ): {
   zoomAnimMimic: CSSProperties;
   zoomAnimMimicScaleInverse: CSSProperties;
 } => {
   if (zoomAnim && map) {
-    const currentMapCenter = map.getCenter();
-    const soonToBeMapCenter = zoomAnim.center;
     const zoomDiff = zoomAnim.zoom - (map.getZoom() ?? 0);
-    const currentProjectedCenter = map.latLngToLayerPoint(currentMapCenter);
-    const soonToBeCenterProjected = map.latLngToLayerPoint(soonToBeMapCenter);
+    const currentProjectedCenter = map.latLngToLayerPoint(reference);
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - Function is private
+    const soonToBeCenterProjected = map._latLngToNewLayerPoint(
+      reference,
+      zoomAnim.zoom,
+      zoomAnim.center
+    );
 
     console.log("currentProjectedCenter", currentProjectedCenter);
     console.log("soonToBeCenterProjected", soonToBeCenterProjected);
-    const diffX = currentProjectedCenter.x - soonToBeCenterProjected.x;
-    const diffY = currentProjectedCenter.y - soonToBeCenterProjected.y;
+    const diffX = soonToBeCenterProjected.x - currentProjectedCenter.x;
+    const diffY = soonToBeCenterProjected.y - currentProjectedCenter.y;
     console.log("diffX", diffX);
     console.log("diffY", diffY);
     console.log("zoomDiff", zoomDiff);
@@ -26,8 +32,9 @@ export const getMapZoomAnimMimic = (
 
     return {
       zoomAnimMimic: {
-        transform: `scale(2)translate(${diffX}px, ${diffY}px)`,
-        transition: "transform 0.25s",
+        transform: `translate(${diffX}px, ${diffY}px)`,
+        // TODO: see if this can be replaced with leaflet-zoom-anim class at target
+        transition: "transform 0.25s cubic-bezier(0,0,0.25,1)",
       },
       zoomAnimMimicScaleInverse: {
         transform: `scale(${1 / 2 ** zoomDiff})`,
