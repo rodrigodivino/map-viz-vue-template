@@ -8,8 +8,5 @@
     "@vue/eslint-config-typescript/recommended", // from @vue/eslint-config-typescript
     "@vue/eslint-config-prettier" // from @vue/eslint-config-prettier, must be last
   ],
-  "plugins": ["prettier"],
-  "rules": {
-    "quotes": ["warn", "double", { "avoidEscape": true }]
-  }
+  "plugins": ["prettier"]
 }
