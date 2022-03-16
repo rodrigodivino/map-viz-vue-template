@@ -36,13 +36,17 @@ export default defineComponent({
     },
   },
   watch: {
-    pointInLayer() {
+    tl() {
       nextTick(() => {
-        if (!this.$refs.canvasRef) return;
+        if (!this.$refs.canvasRef) {
+          return;
+        }
         const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext(
           "2d"
         );
-        if (!ctx) return;
+        if (!ctx) {
+          return;
+        }
 
         ctx.clearRect(0, 0, this.br.x, this.br.y);
         ctx.translate(-this.tl.x, -this.tl.y);
@@ -110,6 +114,24 @@ export default defineComponent({
         e.zoom,
         e.center
       );
+
+      const centerBounds = new LatLng(...center).toBounds(5000);
+
+      console.log("centerBounds", centerBounds);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      this.tl = this.map._latLngToNewLayerPoint(
+        centerBounds.getNorthWest(),
+        e.zoom,
+        e.center
+      );
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      this.br = this.map._latLngToNewLayerPoint(
+        centerBounds.getSouthEast(),
+        e.zoom,
+        e.center
+      );
     });
     this.map.on("viewreset", () => setCenterPx());
     this.map.on("zoomend", () => {
@@ -132,22 +154,28 @@ export default defineComponent({
 
     nextTick(() => {
       const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext("2d");
-      if (!ctx) return;
+      if (!ctx) {
+        return;
+      }
 
       ctx.translate(-this.tl.x, -this.tl.y);
       ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
     });
   },
 });
+
+//transition: 'transform 0.25s cubic-bezier(0,0,0.25,1)',
 </script>
 
 <template>
   <div id="map" ref="map" class="l-fit" />
   <Teleport v-if="svgPane" :to="svgPane">
     <svg
-      :height="br.y - tl.y"
-      :style="{ transform: `translate(${tl.x}px,${tl.y}px)` }"
-      :width="br.x - tl.x"
+      :style="{
+        transform: `translate(${tl.x}px,${tl.y}px)`,
+        width: br.x - tl.x + 'px',
+        height: br.y - tl.y + 'px',
+      }"
     >
       <g class="absolute-coordinates">
         <rect
@@ -158,13 +186,16 @@ export default defineComponent({
         ></rect>
       </g>
       <g
-        :transform="`translate(${-tl.x}, ${-tl.y})`"
+        :style="{
+          transform: `translate(${-tl.x}px, ${-tl.y}px)`,
+        }"
         class="projected-coordinates"
       >
         <g
           :style="{
-            transition: 'transform 0.25s cubic-bezier(0,0,0.25,1)',
             transform: `translate(${pointInLayer.x}px,${pointInLayer.y}px)`,
+            // transition: 'transform 0.25s cubic-bezier(0,0,0.25,1)',
+            // transformOrigin: 'top left',
           }"
         >
           <text>Text Placeholder</text>
