@@ -59,9 +59,11 @@ export default defineComponent({
         return;
       }
       console.log("currentBoundInPixels changed");
-      console.log("this.currentBoundInPixels", this.currentBoundInPixels);
 
       this.pointInLayer = this.map.latLngToLayerPoint(this.pointCoords);
+      nextTick(() => {
+        this.renderCanvas();
+      });
     },
     nextBoundInPixels() {
       console.log("nextBoundInPixels changed");
@@ -86,48 +88,8 @@ export default defineComponent({
     // },
   },
 
-  mounted() {
-    const center = [51.505, -0.09] as L.LatLngTuple;
-
-    this.map = L.map(this.$refs.map as HTMLElement).setView(
-      center,
-      13
-    ) as L.Map;
-
-    this.map.createPane("canvasPane").style.zIndex = "601";
-    this.map.createPane("svgPane").style.zIndex = "602";
-    this.map.createPane("labelPane").style.zIndex = "850";
-
-    L.tileLayer(
-      "https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.{ext}",
-      {
-        attribution:
-          'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        subdomains: "abcd",
-        minZoom: 12,
-        maxZoom: 16,
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        ext: "png",
-      }
-    ).addTo(this.map as L.Map);
-
-    L.tileLayer(
-      "https://stamen-tiles-{s}.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}{r}.{ext}",
-      {
-        attribution:
-          'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        subdomains: "abcd",
-        minZoom: 12,
-        maxZoom: 16,
-        pane: "labelPane",
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        ext: "png",
-      }
-    ).addTo(this.map as L.Map);
-
-    L.control.scale().addTo(this.map as L.Map);
+  mounted: function () {
+    this.map = this.getInitializedMap();
 
     this.map.on("zoomanim", (e) => this.updateNextBounds(e));
     this.map.on("viewreset", () => this.updateCurrentBounds());
@@ -136,19 +98,32 @@ export default defineComponent({
     this.updateCurrentBounds();
 
     nextTick(() => {
+      this.renderCanvas();
+    });
+  },
+  methods: {
+    renderCanvas(): void {
+      if (!this.$refs.canvasRef) return;
+
       const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext("2d");
+
       if (!ctx) {
         return;
       }
 
+      ctx.clearRect(
+        0,
+        0,
+        this.currentBoundSizeInPixels.width,
+        this.currentBoundSizeInPixels.height
+      );
       ctx.translate(
         -this.currentBoundInPixels[0].x,
         -this.currentBoundInPixels[0].y
       );
       ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
-    });
-  },
-  methods: {
+      ctx.resetTransform();
+    },
     updateCurrentBounds(): void {
       if (!this.map) {
         return;
@@ -186,6 +161,49 @@ export default defineComponent({
         e.center
       );
       this.nextBoundInPixels = [topLeftPoint, bottomRightPoint];
+    },
+
+    getInitializedMap(): L.Map {
+      const center = [51.505, -0.09] as L.LatLngTuple;
+
+      const map = L.map(this.$refs.map as HTMLElement).setView(center, 13);
+
+      map.createPane("canvasPane").style.zIndex = "601";
+      map.createPane("svgPane").style.zIndex = "602";
+      map.createPane("labelsPane").style.zIndex = "850";
+
+      L.tileLayer(
+        "https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.{ext}",
+        {
+          attribution:
+            'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          subdomains: "abcd",
+          minZoom: 12,
+          maxZoom: 16,
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          ext: "png",
+        }
+      ).addTo(map);
+
+      L.tileLayer(
+        "https://stamen-tiles-{s}.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}{r}.{ext}",
+        {
+          attribution:
+            'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          subdomains: "abcd",
+          minZoom: 12,
+          maxZoom: 16,
+          pane: "labelsPane",
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          ext: "png",
+        }
+      ).addTo(map);
+
+      L.control.scale().addTo(map);
+
+      return map;
     },
   },
 });
