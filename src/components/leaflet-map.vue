@@ -23,8 +23,14 @@ export default defineComponent({
       pointCoords: [51.505, -0.09] as L.LatLngExpression,
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
       projection: geoMercator() as GeoProjection,
-      tl: { x: 0, y: 0 } as { x: number; y: number },
-      br: { x: 0, y: 0 } as { x: number; y: number },
+      currentBoundInPixels: [
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+      ] as [{ x: number; y: number }, { x: number; y: number }],
+      nextBoundInPixels: [
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+      ] as [{ x: number; y: number }, { x: number; y: number }],
     };
   },
   computed: {
@@ -34,26 +40,45 @@ export default defineComponent({
     canvasPane(): HTMLElement | undefined {
       return this.map?.getPane("canvasPane");
     },
+    currentBoundSizeInPixels(): { width: number; height: number } {
+      const width =
+        this.currentBoundInPixels[1].x - this.currentBoundInPixels[0].x;
+
+      const height =
+        this.currentBoundInPixels[1].y - this.currentBoundInPixels[0].y;
+
+      return {
+        width,
+        height,
+      };
+    },
   },
   watch: {
-    tl() {
-      nextTick(() => {
-        if (!this.$refs.canvasRef) {
-          return;
-        }
-        const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext(
-          "2d"
-        );
-        if (!ctx) {
-          return;
-        }
-
-        ctx.clearRect(0, 0, this.br.x, this.br.y);
-        ctx.translate(-this.tl.x, -this.tl.y);
-        ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
-        ctx.resetTransform();
-      });
+    currentBoundInPixels() {
+      console.log("currentBoundInPixels changed");
+      console.log("this.currentBoundInPixels", this.currentBoundInPixels);
     },
+    nextBoundInPixels() {
+      console.log("nextBoundInPixels changed");
+    },
+    // tl() {
+    //   nextTick(() => {
+    //     if (!this.$refs.canvasRef) {
+    //       return;
+    //     }
+    //     const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext(
+    //       "2d"
+    //     );
+    //     if (!ctx) {
+    //       return;
+    //     }
+    //
+    //     ctx.clearRect(0, 0, this.br.x, this.br.y);
+    //     ctx.translate(-this.tl.x, -this.tl.y);
+    //     ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
+    //     ctx.resetTransform();
+    //   });
+    // },
   },
 
   mounted() {
@@ -107,6 +132,9 @@ export default defineComponent({
     };
 
     this.map.on("zoomanim", (e) => {
+      if (!this.map) {
+        return;
+      }
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       this.pointInLayer = this.map?._latLngToNewLayerPoint(
@@ -115,42 +143,49 @@ export default defineComponent({
         e.center
       );
 
-      const centerBounds = new LatLng(...center).toBounds(5000);
-
-      console.log("centerBounds", centerBounds);
+      const currentBounds = new LatLng(...center).toBounds(5000);
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      this.tl = this.map._latLngToNewLayerPoint(
-        centerBounds.getNorthWest(),
+      const topLeftPoint = this.map._latLngToNewLayerPoint(
+        currentBounds.getNorthWest(),
         e.zoom,
         e.center
       );
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      this.br = this.map._latLngToNewLayerPoint(
-        centerBounds.getSouthEast(),
+      const bottomRightPoint = this.map._latLngToNewLayerPoint(
+        currentBounds.getSouthEast(),
         e.zoom,
         e.center
       );
+      this.nextBoundInPixels = [topLeftPoint, bottomRightPoint];
     });
+
     this.map.on("viewreset", () => setCenterPx());
     this.map.on("zoomend", () => {
+      if (!this.map) {
+        return;
+      }
       setCenterPx();
-      const centerBounds = new LatLng(...center).toBounds(5000);
-      this.tl = this.map?.latLngToLayerPoint(centerBounds.getNorthWest()) ?? {
-        x: 0,
-        y: 0,
-      };
-      this.br = this.map?.latLngToLayerPoint(centerBounds.getSouthEast()) ?? {
-        x: 0,
-        y: 0,
-      };
+      const currentBounds = new LatLng(...center).toBounds(5000);
+      const topLeftPoint = this.map.latLngToLayerPoint(
+        currentBounds.getNorthWest()
+      );
+      const bottomRightPoint = this.map.latLngToLayerPoint(
+        currentBounds.getSouthEast()
+      );
+      this.currentBoundInPixels = [topLeftPoint, bottomRightPoint];
     });
     setCenterPx();
 
-    const centerBounds = new LatLng(...center).toBounds(5000);
-    this.tl = this.map.latLngToLayerPoint(centerBounds.getNorthWest());
-    this.br = this.map.latLngToLayerPoint(centerBounds.getSouthEast());
+    const currentBounds = new LatLng(...center).toBounds(5000);
+    const topLeftPoint = this.map.latLngToLayerPoint(
+      currentBounds.getNorthWest()
+    );
+    const bottomRightPoint = this.map.latLngToLayerPoint(
+      currentBounds.getSouthEast()
+    );
+    this.currentBoundInPixels = [topLeftPoint, bottomRightPoint];
 
     nextTick(() => {
       const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext("2d");
@@ -158,7 +193,10 @@ export default defineComponent({
         return;
       }
 
-      ctx.translate(-this.tl.x, -this.tl.y);
+      ctx.translate(
+        -this.currentBoundInPixels[0].x,
+        -this.currentBoundInPixels[0].y
+      );
       ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
     });
   },
@@ -172,22 +210,23 @@ export default defineComponent({
   <Teleport v-if="svgPane" :to="svgPane">
     <svg
       :style="{
-        transform: `translate(${tl.x}px,${tl.y}px)`,
-        width: br.x - tl.x + 'px',
-        height: br.y - tl.y + 'px',
+        transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
+        width: currentBoundSizeInPixels.width + 'px',
+        height: currentBoundSizeInPixels.height + 'px',
       }"
     >
       <g class="absolute-coordinates">
         <rect
-          :height="br.y - tl.y"
-          :width="br.x - tl.x"
+          :height="currentBoundSizeInPixels.height"
+          :width="currentBoundSizeInPixels.width"
           fill="lightgray"
           opacity="0.5"
         ></rect>
       </g>
       <g
         :style="{
-          transform: `translate(${-tl.x}px, ${-tl.y}px)`,
+          transform: `translate(${-currentBoundInPixels[0]
+            .x}px,${-currentBoundInPixels[0].y}px)`,
         }"
         class="projected-coordinates"
       >
@@ -207,9 +246,11 @@ export default defineComponent({
   <Teleport v-if="canvasPane" :to="canvasPane">
     <canvas
       ref="canvasRef"
-      :height="br.y - tl.y"
-      :style="{ transform: `translate(${tl.x}px,${tl.y}px)` }"
-      :width="br.x - tl.x"
+      :height="currentBoundSizeInPixels.height"
+      :style="{
+        transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
+      }"
+      :width="currentBoundSizeInPixels.width"
     >
     </canvas>
   </Teleport>
