@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as L from "leaflet";
 import { LatLng } from "leaflet";
-import { defineComponent } from "vue";
+import { defineComponent, nextTick } from "vue";
 import { geoMercator, GeoProjection } from "d3";
 
 export default defineComponent({
@@ -35,6 +35,23 @@ export default defineComponent({
       return this.map?.getPane("canvasPane");
     },
   },
+  watch: {
+    pointInLayer() {
+      nextTick(() => {
+        if (!this.$refs.canvasRef) return;
+        const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext(
+          "2d"
+        );
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, this.br.x, this.br.y);
+        ctx.translate(-this.tl.x, -this.tl.y);
+        ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
+        ctx.resetTransform();
+      });
+    },
+  },
+
   mounted() {
     const center = [51.505, -0.09] as L.LatLngTuple;
 
@@ -95,12 +112,31 @@ export default defineComponent({
       );
     });
     this.map.on("viewreset", () => setCenterPx());
-    this.map.on("zoomend", () => setCenterPx());
+    this.map.on("zoomend", () => {
+      setCenterPx();
+      const centerBounds = new LatLng(...center).toBounds(5000);
+      this.tl = this.map?.latLngToLayerPoint(centerBounds.getNorthWest()) ?? {
+        x: 0,
+        y: 0,
+      };
+      this.br = this.map?.latLngToLayerPoint(centerBounds.getSouthEast()) ?? {
+        x: 0,
+        y: 0,
+      };
+    });
     setCenterPx();
 
     const centerBounds = new LatLng(...center).toBounds(5000);
     this.tl = this.map.latLngToLayerPoint(centerBounds.getNorthWest());
     this.br = this.map.latLngToLayerPoint(centerBounds.getSouthEast());
+
+    nextTick(() => {
+      const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext("2d");
+      if (!ctx) return;
+
+      ctx.translate(-this.tl.x, -this.tl.y);
+      ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
+    });
   },
 });
 </script>
@@ -118,6 +154,7 @@ export default defineComponent({
           :height="br.y - tl.y"
           :width="br.x - tl.x"
           fill="lightgray"
+          opacity="0.5"
         ></rect>
       </g>
       <g
@@ -135,6 +172,15 @@ export default defineComponent({
         </g>
       </g>
     </svg>
+  </Teleport>
+  <Teleport v-if="canvasPane" :to="canvasPane">
+    <canvas
+      ref="canvasRef"
+      :height="br.y - tl.y"
+      :style="{ transform: `translate(${tl.x}px,${tl.y}px)` }"
+      :width="br.x - tl.x"
+    >
+    </canvas>
   </Teleport>
 </template>
 
