@@ -58,6 +58,8 @@ export default defineComponent({
       });
     },
     // TODO: Use nextBoundInPixels change to trigger zoom animations for meshes and points
+    // TODO: Find the transform CSS that maps a currentBoundInPixels to nextBoundInPixels, including scale (will work for meshes)
+    // TODO: Find the inverse scale CSS to apply to elements that don't want to scale on zoom anim (to improve points)
     nextBoundInPixels() {
       console.log("nextBoundInPixels changed");
     },
