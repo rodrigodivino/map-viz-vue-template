@@ -2,27 +2,19 @@
 import * as L from "leaflet";
 import { LatLng } from "leaflet";
 import { defineComponent, nextTick } from "vue";
-import { geoMercator, GeoProjection } from "d3";
 
 export default defineComponent({
   name: "LeafletMap",
-  emits: {
-    viewreset() {
-      return true;
-    },
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    zoomanim(payload: L.ZoomAnimEvent) {
-      return true;
+  props: {
+    center: {
+      type: LatLng,
+      default: new LatLng(51.505, -0.09),
     },
   },
-
   data() {
     return {
       map: undefined as L.Map | undefined,
-      pointCoords: [51.505, -0.09] as L.LatLngExpression,
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
-      projection: geoMercator() as GeoProjection,
       currentBoundInPixels: [
         { x: 0, y: 0 },
         { x: 0, y: 0 },
@@ -60,32 +52,15 @@ export default defineComponent({
       }
       console.log("currentBoundInPixels changed");
 
-      this.pointInLayer = this.map.latLngToLayerPoint(this.pointCoords);
+      this.pointInLayer = this.map.latLngToLayerPoint(this.$props.center);
       nextTick(() => {
         this.renderCanvas();
       });
     },
+    // TODO: Use nextBoundInPixels change to trigger zoom animations for meshes and points
     nextBoundInPixels() {
       console.log("nextBoundInPixels changed");
     },
-    // tl() {
-    //   nextTick(() => {
-    //     if (!this.$refs.canvasRef) {
-    //       return;
-    //     }
-    //     const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext(
-    //       "2d"
-    //     );
-    //     if (!ctx) {
-    //       return;
-    //     }
-    //
-    //     ctx.clearRect(0, 0, this.br.x, this.br.y);
-    //     ctx.translate(-this.tl.x, -this.tl.y);
-    //     ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
-    //     ctx.resetTransform();
-    //   });
-    // },
   },
 
   mounted: function () {
@@ -103,7 +78,9 @@ export default defineComponent({
   },
   methods: {
     renderCanvas(): void {
-      if (!this.$refs.canvasRef) return;
+      if (!this.$refs.canvasRef) {
+        return;
+      }
 
       const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext("2d");
 
@@ -129,9 +106,7 @@ export default defineComponent({
         return;
       }
 
-      const center = [51.505, -0.09] as L.LatLngTuple;
-
-      const currentBounds = new LatLng(...center).toBounds(5000);
+      const currentBounds = this.$props.center.toBounds(5000);
       const topLeftPoint = this.map.latLngToLayerPoint(
         currentBounds.getNorthWest()
       );
@@ -141,11 +116,11 @@ export default defineComponent({
       this.currentBoundInPixels = [topLeftPoint, bottomRightPoint];
     },
     updateNextBounds(e: L.ZoomAnimEvent): void {
-      if (!this.map) return;
+      if (!this.map) {
+        return;
+      }
 
-      const center = [51.505, -0.09] as L.LatLngTuple;
-
-      const currentBounds = new LatLng(...center).toBounds(5000);
+      const currentBounds = this.$props.center.toBounds(5000);
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const topLeftPoint = this.map._latLngToNewLayerPoint(
@@ -164,9 +139,10 @@ export default defineComponent({
     },
 
     getInitializedMap(): L.Map {
-      const center = [51.505, -0.09] as L.LatLngTuple;
-
-      const map = L.map(this.$refs.map as HTMLElement).setView(center, 13);
+      const map = L.map(this.$refs.map as HTMLElement).setView(
+        this.$props.center,
+        13
+      );
 
       map.createPane("canvasPane").style.zIndex = "601";
       map.createPane("svgPane").style.zIndex = "602";
