@@ -55,8 +55,13 @@ export default defineComponent({
   },
   watch: {
     currentBoundInPixels() {
+      if (!this.map) {
+        return;
+      }
       console.log("currentBoundInPixels changed");
       console.log("this.currentBoundInPixels", this.currentBoundInPixels);
+
+      this.pointInLayer = this.map.latLngToLayerPoint(this.pointCoords);
     },
     nextBoundInPixels() {
       console.log("nextBoundInPixels changed");
@@ -124,24 +129,46 @@ export default defineComponent({
 
     L.control.scale().addTo(this.map as L.Map);
 
-    const setCenterPx = () => {
-      this.pointInLayer = this.map?.latLngToLayerPoint(this.pointCoords) ?? {
-        x: 0,
-        y: 0,
-      };
-    };
+    this.map.on("zoomanim", (e) => this.updateNextBounds(e));
+    this.map.on("viewreset", () => this.updateCurrentBounds());
+    this.map.on("zoomend", () => this.updateCurrentBounds());
 
-    this.map.on("zoomanim", (e) => {
+    this.updateCurrentBounds();
+
+    nextTick(() => {
+      const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext("2d");
+      if (!ctx) {
+        return;
+      }
+
+      ctx.translate(
+        -this.currentBoundInPixels[0].x,
+        -this.currentBoundInPixels[0].y
+      );
+      ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
+    });
+  },
+  methods: {
+    updateCurrentBounds(): void {
       if (!this.map) {
         return;
       }
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      this.pointInLayer = this.map?._latLngToNewLayerPoint(
-        this.pointCoords,
-        e.zoom,
-        e.center
+
+      const center = [51.505, -0.09] as L.LatLngTuple;
+
+      const currentBounds = new LatLng(...center).toBounds(5000);
+      const topLeftPoint = this.map.latLngToLayerPoint(
+        currentBounds.getNorthWest()
       );
+      const bottomRightPoint = this.map.latLngToLayerPoint(
+        currentBounds.getSouthEast()
+      );
+      this.currentBoundInPixels = [topLeftPoint, bottomRightPoint];
+    },
+    updateNextBounds(e: L.ZoomAnimEvent): void {
+      if (!this.map) return;
+
+      const center = [51.505, -0.09] as L.LatLngTuple;
 
       const currentBounds = new LatLng(...center).toBounds(5000);
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -159,46 +186,7 @@ export default defineComponent({
         e.center
       );
       this.nextBoundInPixels = [topLeftPoint, bottomRightPoint];
-    });
-
-    this.map.on("viewreset", () => setCenterPx());
-    this.map.on("zoomend", () => {
-      if (!this.map) {
-        return;
-      }
-      setCenterPx();
-      const currentBounds = new LatLng(...center).toBounds(5000);
-      const topLeftPoint = this.map.latLngToLayerPoint(
-        currentBounds.getNorthWest()
-      );
-      const bottomRightPoint = this.map.latLngToLayerPoint(
-        currentBounds.getSouthEast()
-      );
-      this.currentBoundInPixels = [topLeftPoint, bottomRightPoint];
-    });
-    setCenterPx();
-
-    const currentBounds = new LatLng(...center).toBounds(5000);
-    const topLeftPoint = this.map.latLngToLayerPoint(
-      currentBounds.getNorthWest()
-    );
-    const bottomRightPoint = this.map.latLngToLayerPoint(
-      currentBounds.getSouthEast()
-    );
-    this.currentBoundInPixels = [topLeftPoint, bottomRightPoint];
-
-    nextTick(() => {
-      const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext("2d");
-      if (!ctx) {
-        return;
-      }
-
-      ctx.translate(
-        -this.currentBoundInPixels[0].x,
-        -this.currentBoundInPixels[0].y
-      );
-      ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
-    });
+    },
   },
 });
 
