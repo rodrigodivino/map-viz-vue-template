@@ -1,16 +1,28 @@
 <script lang="ts">
 import * as L from "leaflet";
-import { defineComponent } from "vue";
+import { CSSProperties, defineComponent } from "vue";
+import { getMapZoomAnimMimic } from "../hooks/get-map-zoom-anim-mimic";
 
 export default defineComponent({
   name: "LeafletMap",
-  emits: ["move"],
+  emits: {
+    viewreset() {
+      return true;
+    },
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    zoomanim(payload: L.ZoomAnimEvent) {
+      return true;
+    },
+  },
 
   data() {
     return {
       map: undefined as L.Map | undefined,
       center: [51.505, -0.09] as L.LatLngExpression,
       centerPx: { x: 0, y: 0 } as { x: number; y: number },
+      zoomMimic: {} as CSSProperties,
+      zoomAnimMimicScaleInverse: {} as CSSProperties,
     };
   },
   computed: {
@@ -64,12 +76,32 @@ export default defineComponent({
       y: 0,
     };
 
-    this.map.on("move", () => {
-      this.$emit("move");
+    this.map.on("viewreset", () => {
       this.centerPx = this.map?.latLngToLayerPoint(this.center) ?? {
         x: 0,
         y: 0,
       };
+      this.$emit("viewreset");
+    });
+
+    this.map.on("zoomanim", (e) => {
+      const zoomAnimMimic = getMapZoomAnimMimic(e, this.map as L.Map);
+      this.zoomMimic = zoomAnimMimic.zoomAnimMimic;
+      this.zoomAnimMimicScaleInverse = zoomAnimMimic.zoomAnimMimicScaleInverse;
+    });
+
+    this.map.on("zoomend", () => {
+      const zoomAnimMimic = getMapZoomAnimMimic(undefined, this.map as L.Map);
+      this.zoomMimic = zoomAnimMimic.zoomAnimMimic;
+      this.zoomAnimMimicScaleInverse = zoomAnimMimic.zoomAnimMimicScaleInverse;
+
+      this.$emit("viewreset");
+
+      this.centerPx = this.map?.latLngToLayerPoint(this.center) ?? {
+        x: 0,
+        y: 0,
+      };
+      this.$emit("viewreset");
     });
   },
 });
@@ -77,25 +109,26 @@ export default defineComponent({
 
 <template>
   <div id="map" ref="map" class="l-fit" />
-  <Teleport v-if="markerPane" :to="map.getPane('markerPane')">
-    <div class="marker-pane-wrapper">
-      <div
-        class="debug-div"
-        :style="{
-          transform: `translate(${centerPx.x}px,${centerPx.y}px)`,
-        }"
-      ></div>
-    </div>
+  <Teleport v-if="markerPane" :to="markerPane">
+    <div
+      :class="{
+        'debug-div': true,
+      }"
+      :style="{
+        transform: `translate(${centerPx.x}px,${centerPx.y}px)`,
+      }"
+    ></div>
   </Teleport>
 </template>
 
 <style scoped>
 .debug-div {
-  width: 10px;
-  height: 10px;
+  width: 200px;
+  height: 200px;
   background-color: #3777ae;
 }
 
-.marker-pane-wrapper {
+.inner-debug-div {
+  background-color: rebeccapurple;
 }
 </style>
