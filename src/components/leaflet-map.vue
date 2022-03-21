@@ -91,29 +91,46 @@ export default defineComponent({
         transition: "transform 0s",
         transformOrigin: "center",
       };
-      this.encodeCurrentBoundInPixels();
+      this.currentBoundInPixels = this.encodeCurrentBoundInPixels();
+      console.log("this.currentBoundInPixels[0]", this.currentBoundInPixels[0]);
       this.encode();
       this.render();
     },
     handleZoomAnim(e: L.ZoomAnimEvent): void {
-      // this.updateNextBounds(e);
-      //
-      // const newSize = this.nextBoundInPixels[1].x - this.nextBoundInPixels[0].x;
-      // const oldSize =
-      //   this.currentBoundInPixels[1].x - this.currentBoundInPixels[0].x;
-      // const scale = newSize / oldSize;
-      //
-      // const xTranslation =
-      //   (this.nextBoundInPixels[0].x - this.currentBoundInPixels[0].x) * scale;
-      // const yTranslation =
-      //   (this.nextBoundInPixels[0].y - this.currentBoundInPixels[0].y) * scale;
-      //
-      // console.log("scale", scale);
-      // this.zoomAnimStyles = {
-      //   transform: `translate(${xTranslation}px,${yTranslation}px)scale(${scale})`,
-      //   transformOrigin: "center",
-      //   transition: "transform 0s cubic-bezier(0,0,0.25,1)",
-      // };
+      this.updateNextBounds(e);
+
+      console.log("this.nextBoundInPixels[0]", this.nextBoundInPixels[0]);
+      const newSize = this.nextBoundInPixels[1].x - this.nextBoundInPixels[0].x;
+      const oldSize =
+        this.currentBoundInPixels[1].x - this.currentBoundInPixels[0].x;
+      const scale = newSize / oldSize;
+
+      const currentCenterX =
+        this.currentBoundInPixels[0].x +
+        0.5 * (this.currentBoundInPixels[1].x - this.currentBoundInPixels[0].x);
+      const nextCenterX =
+        this.nextBoundInPixels[0].x +
+        0.5 * (this.nextBoundInPixels[1].x - this.nextBoundInPixels[0].x);
+
+      const currentCenterY =
+        this.currentBoundInPixels[0].y +
+        0.5 * (this.currentBoundInPixels[1].y - this.currentBoundInPixels[0].y);
+      const nextCenterY =
+        this.nextBoundInPixels[0].y +
+        0.5 * (this.nextBoundInPixels[1].y - this.nextBoundInPixels[0].y);
+
+      const xTranslation = nextCenterX - currentCenterX;
+
+      const yTranslation = nextCenterY - currentCenterY;
+
+      console.log("scale", scale);
+      this.zoomAnimStyles = {
+        transform: `translate(${xTranslation}px,${yTranslation}px)scale(${scale})`,
+        transformOrigin: "center center",
+        transition: "transform 0.25s cubic-bezier(0,0,0.25,1)",
+      };
+
+      // console.log("this.zoomAnimStyles", this.zoomAnimStyles);
     },
 
     getInitializedMap(): L.Map {
@@ -180,7 +197,10 @@ export default defineComponent({
         e.zoom,
         e.center
       );
-      this.nextBoundInPixels = [topLeftPoint, bottomRightPoint];
+      this.nextBoundInPixels = [topLeftPoint, bottomRightPoint].map((p) => ({
+        x: Math.round(p.x),
+        y: Math.round(p.y),
+      })) as [{ x: number; y: number }, { x: number; y: number }];
     },
 
     encodePointInLayer(): { x: number; y: number } {
@@ -230,40 +250,50 @@ export default defineComponent({
 <template>
   <div id="map" ref="map" class="l-fit" />
   <Teleport v-if="svgPane" :to="svgPane">
-    <svg
+    <div
       :style="{
         transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
         width: currentBoundSizeInPixels.width + 'px',
         height: currentBoundSizeInPixels.height + 'px',
       }"
     >
-      <g class="absolute-coordinates" :style="zoomAnimStyles">
-        <rect
-          :height="currentBoundSizeInPixels.height"
-          :width="currentBoundSizeInPixels.width"
-          fill="lightgray"
-          opacity="0.5"
-        ></rect>
-      </g>
-      <g
-        :style="{
-          transform: `translate(${-currentBoundInPixels[0]
-            .x}px,${-currentBoundInPixels[0].y}px)`,
-        }"
-        class="projected-coordinates"
+      <svg
+        :style="[
+          {
+            width: '100%',
+            height: '100%',
+          },
+          zoomAnimStyles,
+        ]"
       >
-        <g class="zoom-anim" :style="zoomAnimStyles">
-          <g
-            :style="{
-              transform: `translate(${pointInLayer.x}px,${pointInLayer.y}px)`,
-            }"
-          >
-            <text>Text Placeholder</text>
-            <circle r="10"></circle>
+        <g class="absolute-coordinates">
+          <rect
+            :height="currentBoundSizeInPixels.height"
+            :width="currentBoundSizeInPixels.width"
+            fill="lightgray"
+            opacity="0.5"
+          ></rect>
+        </g>
+        <g
+          :style="{
+            transform: `translate(${-currentBoundInPixels[0]
+              .x}px,${-currentBoundInPixels[0].y}px)`,
+          }"
+          class="projected-coordinates"
+        >
+          <g class="zoom-anim">
+            <g
+              :style="{
+                transform: `translate(${pointInLayer.x}px,${pointInLayer.y}px)`,
+              }"
+            >
+              <text>Text Placeholder</text>
+              <circle r="10"></circle>
+            </g>
           </g>
         </g>
-      </g>
-    </svg>
+      </svg>
+    </div>
   </Teleport>
   <Teleport v-if="canvasPane" :to="canvasPane">
     <canvas
