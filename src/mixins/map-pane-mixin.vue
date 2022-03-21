@@ -2,7 +2,7 @@
 import { CSSProperties, defineComponent, PropType } from "vue";
 
 export default defineComponent({
-  name: "LeafletPaneMixin",
+  name: "MapPaneMixin",
   props: {
     origin: {
       type: Object as PropType<{ x: number; y: number } | undefined>,

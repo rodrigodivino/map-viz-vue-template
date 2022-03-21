@@ -1,10 +1,10 @@
 <script lang="ts">
 import { defineComponent } from "vue";
-import LeafletPaneMixin from "../mixins/leaflet-pane-mixin.vue";
+import MapPaneMixin from "../mixins/map-pane-mixin.vue";
 
 export default defineComponent({
-  name: "LeafletCanvas",
-  mixins: [LeafletPaneMixin],
+  name: "CanvasPane",
+  mixins: [MapPaneMixin],
 });
 </script>
 

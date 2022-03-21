@@ -3,12 +3,12 @@ import LeafletMap from "./leaflet-map.vue";
 import { defineComponent } from "vue";
 import * as L from "leaflet";
 import { LatLng } from "leaflet";
-import LeafletCanvas from "./leaflet-canvas.vue";
-import LeafletSVG from "./leaflet-svg.vue";
+import CanvasPane from "./canvas-pane.vue";
+import SVGPane from "./svg-pane.vue";
 
 export default defineComponent({
   name: "ApplicationRoot",
-  components: { LeafletSVG, LeafletCanvas, LeafletMap },
+  components: { SVGPane, CanvasPane, LeafletMap },
   data() {
     return {
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
@@ -37,7 +37,7 @@ export default defineComponent({
     <main class="l-centered main">
       <LeafletMap @viewreset="handleMapViewReset">
         <template #pane1="props">
-          <LeafletSVG
+          <SVGPane
             :height="props.height"
             :origin="props.origin"
             :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
@@ -49,11 +49,11 @@ export default defineComponent({
                 <circle fill="red" r="10"></circle>
               </g>
             </g>
-          </LeafletSVG>
+          </SVGPane>
         </template>
 
         <template #foregroundPane1="props">
-          <LeafletSVG
+          <SVGPane
             :height="props.height"
             :origin="props.origin"
             :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
@@ -65,11 +65,11 @@ export default defineComponent({
                 <text>Text Placeholder</text>
               </g>
             </g>
-          </LeafletSVG>
+          </SVGPane>
         </template>
 
         <template #pane2="props">
-          <LeafletCanvas
+          <CanvasPane
             :height="props.height"
             :origin="props.origin"
             :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
@@ -79,7 +79,7 @@ export default defineComponent({
         </template>
 
         <template #foregroundPane2="props">
-          <LeafletCanvas
+          <CanvasPane
             :height="props.height"
             :origin="props.origin"
             :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
