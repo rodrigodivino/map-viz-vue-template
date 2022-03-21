@@ -45,38 +45,19 @@ export default defineComponent({
       };
     },
   },
-  watch: {
-    currentBoundInPixels() {
-      if (!this.map) {
-        return;
-      }
-      console.log("currentBoundInPixels changed");
 
-      this.pointInLayer = this.map.latLngToLayerPoint(this.$props.center);
-      nextTick(() => {
-        this.renderCanvas();
-      });
-    },
-    // TODO: Use nextBoundInPixels change to trigger zoom animations for meshes and points
-    // TODO: Find the transform CSS that maps a currentBoundInPixels to nextBoundInPixels, including scale (will work for meshes)
-    // TODO: Find the inverse scale CSS to apply to elements that don't want to scale on zoom anim (to improve points)
-    nextBoundInPixels() {
-      console.log("nextBoundInPixels changed");
-    },
-  },
+  // TODO: Use nextBoundInPixels change to trigger zoom animations for meshes and points
+  // TODO: Find the transform CSS that maps a currentBoundInPixels to nextBoundInPixels, including scale (will work for meshes)
+  // TODO: Find the inverse scale CSS to apply to elements that don't want to scale on zoom anim (to improve points)
 
   mounted: function () {
     this.map = this.getInitializedMap();
 
-    this.map.on("zoomanim", (e) => this.updateNextBounds(e));
-    this.map.on("viewreset", () => this.updateCurrentBounds());
-    this.map.on("zoomend", () => this.updateCurrentBounds());
+    this.map.on("zoomanim", (e) => this.handleZoomAnim(e));
+    this.map.on("viewreset", () => this.handleViewUpdate());
+    this.map.on("zoomend", () => this.handleViewUpdate());
 
-    this.updateCurrentBounds();
-
-    nextTick(() => {
-      this.renderCanvas();
-    });
+    this.handleViewUpdate();
   },
   methods: {
     renderCanvas(): void {
@@ -103,41 +84,13 @@ export default defineComponent({
       ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
       ctx.resetTransform();
     },
-    updateCurrentBounds(): void {
-      if (!this.map) {
-        return;
-      }
-
-      const currentBounds = this.$props.center.toBounds(5000);
-      const topLeftPoint = this.map.latLngToLayerPoint(
-        currentBounds.getNorthWest()
-      );
-      const bottomRightPoint = this.map.latLngToLayerPoint(
-        currentBounds.getSouthEast()
-      );
-      this.currentBoundInPixels = [topLeftPoint, bottomRightPoint];
+    handleViewUpdate(): void {
+      this.encodeCurrentBoundInPixels();
+      this.encode();
+      this.render();
     },
-    updateNextBounds(e: L.ZoomAnimEvent): void {
-      if (!this.map) {
-        return;
-      }
-
-      const currentBounds = this.$props.center.toBounds(5000);
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      const topLeftPoint = this.map._latLngToNewLayerPoint(
-        currentBounds.getNorthWest(),
-        e.zoom,
-        e.center
-      );
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      const bottomRightPoint = this.map._latLngToNewLayerPoint(
-        currentBounds.getSouthEast(),
-        e.zoom,
-        e.center
-      );
-      this.nextBoundInPixels = [topLeftPoint, bottomRightPoint];
+    handleZoomAnim(e: L.ZoomAnimEvent): void {
+      this.updateNextBounds(e);
     },
 
     getInitializedMap(): L.Map {
@@ -182,6 +135,68 @@ export default defineComponent({
       L.control.scale().addTo(map);
 
       return map;
+    },
+
+    updateNextBounds(e: L.ZoomAnimEvent): void {
+      if (!this.map) {
+        return;
+      }
+
+      const currentBounds = this.$props.center.toBounds(5000);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const topLeftPoint = this.map._latLngToNewLayerPoint(
+        currentBounds.getNorthWest(),
+        e.zoom,
+        e.center
+      );
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const bottomRightPoint = this.map._latLngToNewLayerPoint(
+        currentBounds.getSouthEast(),
+        e.zoom,
+        e.center
+      );
+      this.nextBoundInPixels = [topLeftPoint, bottomRightPoint];
+    },
+
+    encodePointInLayer(): { x: number; y: number } {
+      return this.map?.latLngToLayerPoint(this.$props.center) ?? { x: 0, y: 0 };
+    },
+    encodeCurrentBoundInPixels(): [
+      { x: number; y: number },
+      { x: number; y: number }
+    ] {
+      if (!this.map) {
+        return [
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+        ];
+      }
+
+      const currentBounds = this.$props.center.toBounds(5000);
+      const topLeftPoint = this.map.latLngToLayerPoint(
+        currentBounds.getNorthWest()
+      );
+      const bottomRightPoint = this.map.latLngToLayerPoint(
+        currentBounds.getSouthEast()
+      );
+      return [topLeftPoint, bottomRightPoint];
+    },
+
+    encode(): void {
+      if (!this.map) {
+        return;
+      }
+      this.currentBoundInPixels = this.encodeCurrentBoundInPixels();
+
+      this.pointInLayer = this.encodePointInLayer();
+    },
+
+    render(): void {
+      nextTick(() => {
+        this.renderCanvas();
+      });
     },
   },
 });
