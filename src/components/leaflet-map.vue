@@ -15,15 +15,13 @@ export default defineComponent({
     return {
       map: undefined as L.Map | undefined,
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
-      zoomAnimStyles: {} as CSSProperties,
       currentBoundInPixels: [
         { x: 0, y: 0 },
         { x: 0, y: 0 },
       ] as [{ x: number; y: number }, { x: number; y: number }],
-      nextBoundInPixels: [
-        { x: 0, y: 0 },
-        { x: 0, y: 0 },
-      ] as [{ x: number; y: number }, { x: number; y: number }],
+      nextBoundInPixels: null as
+        | [{ x: number; y: number }, { x: number; y: number }]
+        | null,
     };
   },
   computed: {
@@ -43,6 +41,45 @@ export default defineComponent({
       return {
         width,
         height,
+      };
+    },
+
+    zoomAnimStyles(): CSSProperties {
+      if (!this.nextBoundInPixels) {
+        return {
+          transform: "translate(0,0)scale(1)",
+          transition: "transform 0s",
+          transformOrigin: "center",
+        };
+      }
+
+      const newSize = this.nextBoundInPixels[1].x - this.nextBoundInPixels[0].x;
+      const oldSize =
+        this.currentBoundInPixels[1].x - this.currentBoundInPixels[0].x;
+      const scale = newSize / oldSize;
+
+      const currentCenterX =
+        this.currentBoundInPixels[0].x +
+        0.5 * (this.currentBoundInPixels[1].x - this.currentBoundInPixels[0].x);
+
+      const nextCenterX =
+        this.nextBoundInPixels[0].x +
+        0.5 * (this.nextBoundInPixels[1].x - this.nextBoundInPixels[0].x);
+
+      const currentCenterY =
+        this.currentBoundInPixels[0].y +
+        0.5 * (this.currentBoundInPixels[1].y - this.currentBoundInPixels[0].y);
+      const nextCenterY =
+        this.nextBoundInPixels[0].y +
+        0.5 * (this.nextBoundInPixels[1].y - this.nextBoundInPixels[0].y);
+
+      const xTranslation = nextCenterX - currentCenterX;
+      const yTranslation = nextCenterY - currentCenterY;
+
+      return {
+        transform: `translate(${xTranslation}px,${yTranslation}px)scale(${scale})`,
+        transformOrigin: "center center",
+        transition: "transform 0.25s cubic-bezier(0,0,0.25,1)",
       };
     },
   },
@@ -86,51 +123,37 @@ export default defineComponent({
       ctx.resetTransform();
     },
     handleViewUpdate(): void {
-      this.zoomAnimStyles = {
-        transform: "translate(0,0)scale(1)",
-        transition: "transform 0s",
-        transformOrigin: "center",
-      };
+      this.nextBoundInPixels = null;
       this.currentBoundInPixels = this.encodeCurrentBoundInPixels();
       console.log("this.currentBoundInPixels[0]", this.currentBoundInPixels[0]);
       this.encode();
       this.render();
     },
     handleZoomAnim(e: L.ZoomAnimEvent): void {
-      this.updateNextBounds(e);
+      if (!this.map) {
+        return;
+      }
 
-      console.log("this.nextBoundInPixels[0]", this.nextBoundInPixels[0]);
-      const newSize = this.nextBoundInPixels[1].x - this.nextBoundInPixels[0].x;
-      const oldSize =
-        this.currentBoundInPixels[1].x - this.currentBoundInPixels[0].x;
-      const scale = newSize / oldSize;
+      const currentBounds = this.$props.center.toBounds(5000);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const topLeftPoint = this.map._latLngToNewLayerPoint(
+        currentBounds.getNorthWest(),
+        e.zoom,
+        e.center
+      );
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const bottomRightPoint = this.map._latLngToNewLayerPoint(
+        currentBounds.getSouthEast(),
+        e.zoom,
+        e.center
+      );
 
-      const currentCenterX =
-        this.currentBoundInPixels[0].x +
-        0.5 * (this.currentBoundInPixels[1].x - this.currentBoundInPixels[0].x);
-      const nextCenterX =
-        this.nextBoundInPixels[0].x +
-        0.5 * (this.nextBoundInPixels[1].x - this.nextBoundInPixels[0].x);
-
-      const currentCenterY =
-        this.currentBoundInPixels[0].y +
-        0.5 * (this.currentBoundInPixels[1].y - this.currentBoundInPixels[0].y);
-      const nextCenterY =
-        this.nextBoundInPixels[0].y +
-        0.5 * (this.nextBoundInPixels[1].y - this.nextBoundInPixels[0].y);
-
-      const xTranslation = nextCenterX - currentCenterX;
-
-      const yTranslation = nextCenterY - currentCenterY;
-
-      console.log("scale", scale);
-      this.zoomAnimStyles = {
-        transform: `translate(${xTranslation}px,${yTranslation}px)scale(${scale})`,
-        transformOrigin: "center center",
-        transition: "transform 0.25s cubic-bezier(0,0,0.25,1)",
-      };
-
-      // console.log("this.zoomAnimStyles", this.zoomAnimStyles);
+      this.nextBoundInPixels = [topLeftPoint, bottomRightPoint].map((p) => ({
+        x: Math.round(p.x),
+        y: Math.round(p.y),
+      })) as [{ x: number; y: number }, { x: number; y: number }];
     },
 
     getInitializedMap(): L.Map {
@@ -175,32 +198,6 @@ export default defineComponent({
       L.control.scale().addTo(map);
 
       return map;
-    },
-
-    updateNextBounds(e: L.ZoomAnimEvent): void {
-      if (!this.map) {
-        return;
-      }
-
-      const currentBounds = this.$props.center.toBounds(5000);
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      const topLeftPoint = this.map._latLngToNewLayerPoint(
-        currentBounds.getNorthWest(),
-        e.zoom,
-        e.center
-      );
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      const bottomRightPoint = this.map._latLngToNewLayerPoint(
-        currentBounds.getSouthEast(),
-        e.zoom,
-        e.center
-      );
-      this.nextBoundInPixels = [topLeftPoint, bottomRightPoint].map((p) => ({
-        x: Math.round(p.x),
-        y: Math.round(p.y),
-      })) as [{ x: number; y: number }, { x: number; y: number }];
     },
 
     encodePointInLayer(): { x: number; y: number } {
@@ -296,15 +293,21 @@ export default defineComponent({
     </div>
   </Teleport>
   <Teleport v-if="canvasPane" :to="canvasPane">
-    <canvas
-      ref="canvasRef"
-      :height="currentBoundSizeInPixels.height"
+    <div
       :style="{
         transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
+        width: currentBoundSizeInPixels.width + 'px',
+        height: currentBoundSizeInPixels.height + 'px',
       }"
-      :width="currentBoundSizeInPixels.width"
     >
-    </canvas>
+      <canvas
+        ref="canvasRef"
+        :height="currentBoundSizeInPixels.height"
+        :width="currentBoundSizeInPixels.width"
+        :style="zoomAnimStyles"
+      >
+      </canvas>
+    </div>
   </Teleport>
 </template>
 
