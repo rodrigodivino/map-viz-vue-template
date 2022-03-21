@@ -1,10 +1,10 @@
 <script lang="ts">
 import { defineComponent } from "vue";
-import LeafletPane from "./leaflet-pane.vue";
+import LeafletPaneMixin from "../mixins/leaflet-pane-mixin.vue";
 
 export default defineComponent({
   name: "LeafletCanvas",
-  mixins: [LeafletPane],
+  mixins: [LeafletPaneMixin],
 });
 </script>
 
@@ -16,7 +16,6 @@ export default defineComponent({
     :width="width"
   >
   </canvas>
-  <slot :canvas="$refs.canvasRef"></slot>
 </template>
 
 <style scoped></style>

@@ -65,22 +65,21 @@ export default defineComponent({
         <template #canvas="props">
           <LeafletCanvas
             :height="props.height"
+            :origin="props.origin"
+            :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
             :width="props.width"
             :zoom-anim-styles="props.zoomAnimStyles"
-            :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
-            :origin="props.origin"
           />
         </template>
 
         <template #canvas-foreground="props">
           <LeafletCanvas
             :height="props.height"
+            :origin="props.origin"
+            :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
             :width="props.width"
             :zoom-anim-styles="props.zoomAnimStyles"
-            :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
-            :origin="props.origin"
-          >
-          </LeafletCanvas>
+          />
         </template>
       </LeafletMap>
     </main>
