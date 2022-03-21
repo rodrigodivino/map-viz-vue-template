@@ -80,6 +80,24 @@ export default defineComponent({
         transition: "transform 0.25s cubic-bezier(0,0,0.25,1)",
       };
     },
+    reverseZoomAnimScaleStyles(): CSSProperties {
+      if (!this.nextBoundInPixels) {
+        return {
+          transform: "scale(1)",
+          transition: "transform 0s",
+        };
+      }
+
+      const newSize = this.nextBoundInPixels[1].x - this.nextBoundInPixels[0].x;
+      const oldSize =
+        this.currentBoundInPixels[1].x - this.currentBoundInPixels[0].x;
+      const scale = newSize / oldSize;
+
+      return {
+        transform: `scale(${1 / scale})`,
+        transition: "transform 0.25s cubic-bezier(0,0,0.25,1)",
+      };
+    },
     currentBoundInPixels(): [
       { x: number; y: number },
       { x: number; y: number }
@@ -137,7 +155,7 @@ export default defineComponent({
         -this.currentBoundInPixels[0].x,
         -this.currentBoundInPixels[0].y
       );
-      ctx.fillRect(this.pointInLayer.x, this.pointInLayer.y, 50, 50);
+      ctx.fillRect(this.pointInLayer.x - 25, this.pointInLayer.y - 25, 50, 50);
       ctx.resetTransform();
     },
     handleViewUpdate(): void {
@@ -288,8 +306,10 @@ export default defineComponent({
                 transform: `translate(${pointInLayer.x}px,${pointInLayer.y}px)`,
               }"
             >
-              <text>Text Placeholder</text>
-              <circle r="10"></circle>
+              <g :style="reverseZoomAnimScaleStyles">
+                <text>Text Placeholder</text>
+                <circle r="10"></circle>
+              </g>
             </g>
           </g>
         </g>
