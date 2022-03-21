@@ -16,10 +16,7 @@ export default defineComponent({
       map: undefined as L.Map | undefined,
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
       currentBounds: undefined as LatLngBounds | undefined,
-      currentBoundInPixels: [
-        { x: 0, y: 0 },
-        { x: 0, y: 0 },
-      ] as [{ x: number; y: number }, { x: number; y: number }],
+      nextBounds: undefined as LatLngBounds | undefined,
       nextBoundInPixels: null as
         | [{ x: number; y: number }, { x: number; y: number }]
         | null,
@@ -83,6 +80,25 @@ export default defineComponent({
         transition: "transform 0.25s cubic-bezier(0,0,0.25,1)",
       };
     },
+    currentBoundInPixels(): [
+      { x: number; y: number },
+      { x: number; y: number }
+    ] {
+      if (!(this.map && this.currentBounds)) {
+        return [
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+        ];
+      }
+
+      const topLeftPoint = this.map.latLngToLayerPoint(
+        this.currentBounds.getNorthWest()
+      );
+      const bottomRightPoint = this.map.latLngToLayerPoint(
+        this.currentBounds.getSouthEast()
+      );
+      return [topLeftPoint, bottomRightPoint];
+    },
   },
 
   // TODO: Use nextBoundInPixels change to trigger zoom animations for meshes and points
@@ -126,8 +142,6 @@ export default defineComponent({
     },
     handleViewUpdate(): void {
       this.nextBoundInPixels = null;
-      this.currentBoundInPixels = this.encodeCurrentBoundInPixels();
-      console.log("this.currentBoundInPixels[0]", this.currentBoundInPixels[0]);
       this.encode();
       this.render();
     },
@@ -141,30 +155,29 @@ export default defineComponent({
       }
     },
     handleZoomAnim(e: L.ZoomAnimEvent): void {
-      if (!this.map) {
+      if (!(this.map && this.currentBounds)) {
         return;
       }
 
-      // const currentBounds = this.map.getBounds().pad(0.5);
-      // // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // // @ts-ignore
-      // const topLeftPoint = this.map._latLngToNewLayerPoint(
-      //   currentBounds.getNorthWest(),
-      //   e.zoom,
-      //   e.center
-      // );
-      // // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // // @ts-ignore
-      // const bottomRightPoint = this.map._latLngToNewLayerPoint(
-      //   currentBounds.getSouthEast(),
-      //   e.zoom,
-      //   e.center
-      // );
-      //
-      // this.nextBoundInPixels = [topLeftPoint, bottomRightPoint].map((p) => ({
-      //   x: Math.round(p.x),
-      //   y: Math.round(p.y),
-      // })) as [{ x: number; y: number }, { x: number; y: number }];
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const topLeftPoint = this.map._latLngToNewLayerPoint(
+        this.currentBounds.getNorthWest(),
+        e.zoom,
+        e.center
+      );
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const bottomRightPoint = this.map._latLngToNewLayerPoint(
+        this.currentBounds.getSouthEast(),
+        e.zoom,
+        e.center
+      );
+
+      this.nextBoundInPixels = [topLeftPoint, bottomRightPoint].map((p) => ({
+        x: Math.round(p.x),
+        y: Math.round(p.y),
+      })) as [{ x: number; y: number }, { x: number; y: number }];
     },
 
     getInitializedMap(): L.Map {
@@ -214,34 +227,12 @@ export default defineComponent({
     encodePointInLayer(): { x: number; y: number } {
       return this.map?.latLngToLayerPoint(this.$props.center) ?? { x: 0, y: 0 };
     },
-    encodeCurrentBoundInPixels(): [
-      { x: number; y: number },
-      { x: number; y: number }
-    ] {
-      if (!this.map) {
-        return [
-          { x: 0, y: 0 },
-          { x: 0, y: 0 },
-        ];
-      }
-
-      this.currentBounds = this.map.getBounds().pad(1);
-
-      console.log("this.currentBounds", this.currentBounds);
-      const topLeftPoint = this.map.latLngToLayerPoint(
-        this.currentBounds.getNorthWest()
-      );
-      const bottomRightPoint = this.map.latLngToLayerPoint(
-        this.currentBounds.getSouthEast()
-      );
-      return [topLeftPoint, bottomRightPoint];
-    },
 
     encode(): void {
       if (!this.map) {
         return;
       }
-      this.currentBoundInPixels = this.encodeCurrentBoundInPixels();
+      this.currentBounds = this.map.getBounds().pad(1);
 
       this.pointInLayer = this.encodePointInLayer();
     },
