@@ -4,10 +4,11 @@ import { defineComponent } from "vue";
 import * as L from "leaflet";
 import { LatLng } from "leaflet";
 import LeafletCanvas from "./leaflet-canvas.vue";
+import LeafletSVG from "./leaflet-svg.vue";
 
 export default defineComponent({
   name: "ApplicationRoot",
-  components: { LeafletCanvas, LeafletMap },
+  components: { LeafletSVG, LeafletCanvas, LeafletMap },
   data() {
     return {
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
@@ -46,20 +47,36 @@ export default defineComponent({
         @viewreset="handleMapViewReset"
         @canvas-ready="handleCanvasReady"
       >
-        <template #svg="projectedSVGProps">
-          <g :transform="`translate(${pointInLayer.x},${pointInLayer.y})`">
-            <g :style="projectedSVGProps.reverseZoomAnimScaleStyles">
-              <circle fill="red" r="10"></circle>
+        <template #svg="props">
+          <LeafletSVG
+            :height="props.height"
+            :origin="props.origin"
+            :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
+            :width="props.width"
+            :zoom-anim-styles="props.zoomAnimStyles"
+          >
+            <g :transform="`translate(${pointInLayer.x},${pointInLayer.y})`">
+              <g :style="props.reverseZoomAnimScaleStyles">
+                <circle fill="red" r="10"></circle>
+              </g>
             </g>
-          </g>
+          </LeafletSVG>
         </template>
 
-        <template #svg-foreground="projectedSVGProps">
-          <g :transform="`translate(${pointInLayer.x},${pointInLayer.y})`">
-            <g :style="projectedSVGProps.reverseZoomAnimScaleStyles">
-              <text>Text Placeholder</text>
+        <template #svg-foreground="props">
+          <LeafletSVG
+            :height="props.height"
+            :origin="props.origin"
+            :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
+            :width="props.width"
+            :zoom-anim-styles="props.zoomAnimStyles"
+          >
+            <g :transform="`translate(${pointInLayer.x},${pointInLayer.y})`">
+              <g :style="props.reverseZoomAnimScaleStyles">
+                <text>Text Placeholder</text>
+              </g>
             </g>
-          </g>
+          </LeafletSVG>
         </template>
 
         <template #canvas="props">

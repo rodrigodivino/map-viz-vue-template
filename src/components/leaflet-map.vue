@@ -256,30 +256,18 @@ export default defineComponent({
         height: currentBoundSizeInPixels.height + 'px',
       }"
     >
-      <svg
-        :style="[
-          {
-            width: '100%',
-            height: '100%',
-          },
-          zoomAnimStyles,
-        ]"
+      <slot
+        :height="currentBoundSizeInPixels.height"
+        :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
+        :width="currentBoundSizeInPixels.width"
+        :zoom-anim-styles="zoomAnimStyles"
+        :origin="{
+          x: -currentBoundInPixels[0].x,
+          y: -currentBoundInPixels[0].y,
+        }"
+        name="svg"
       >
-        <g
-          :style="{
-            transform: `translate(${-currentBoundInPixels[0]
-              .x}px,${-currentBoundInPixels[0].y}px)`,
-          }"
-          class="projected-coordinates"
-        >
-          <g class="zoom-anim">
-            <slot
-              :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
-              name="svg"
-            />
-          </g>
-        </g>
-      </svg>
+      </slot>
     </div>
   </Teleport>
   <Teleport v-if="svgForegroundPane" :to="svgForegroundPane">
@@ -290,30 +278,18 @@ export default defineComponent({
         height: currentBoundSizeInPixels.height + 'px',
       }"
     >
-      <svg
-        :style="[
-          {
-            width: '100%',
-            height: '100%',
-          },
-          zoomAnimStyles,
-        ]"
+      <slot
+        :height="currentBoundSizeInPixels.height"
+        :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
+        :width="currentBoundSizeInPixels.width"
+        :zoom-anim-styles="zoomAnimStyles"
+        :origin="{
+          x: -currentBoundInPixels[0].x,
+          y: -currentBoundInPixels[0].y,
+        }"
+        name="svg-foreground"
       >
-        <g
-          :style="{
-            transform: `translate(${-currentBoundInPixels[0]
-              .x}px,${-currentBoundInPixels[0].y}px)`,
-          }"
-          class="projected-coordinates"
-        >
-          <g class="zoom-anim">
-            <slot
-              :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
-              name="svg-foreground"
-            />
-          </g>
-        </g>
-      </svg>
+      </slot>
     </div>
   </Teleport>
   <Teleport v-if="canvasBackgroundPane" :to="canvasBackgroundPane">
@@ -329,7 +305,10 @@ export default defineComponent({
         :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
         :width="currentBoundSizeInPixels.width"
         :zoom-anim-styles="zoomAnimStyles"
-        :origin="currentBoundInPixels[0]"
+        :origin="{
+          x: -currentBoundInPixels[0].x,
+          y: -currentBoundInPixels[0].y,
+        }"
         name="canvas"
       >
       </slot>
@@ -348,7 +327,10 @@ export default defineComponent({
         :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
         :width="currentBoundSizeInPixels.width"
         :zoom-anim-styles="zoomAnimStyles"
-        :origin="currentBoundInPixels[0]"
+        :origin="{
+          x: -currentBoundInPixels[0].x,
+          y: -currentBoundInPixels[0].y,
+        }"
         name="canvas-foreground"
       >
       </slot>

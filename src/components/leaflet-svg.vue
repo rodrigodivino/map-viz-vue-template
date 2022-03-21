@@ -19,9 +19,7 @@ export default defineComponent({
     ]"
   >
     <g
-      :style="{
-        transform: `translate(${-origin[0].x}px,${-origin[0].y}px)`,
-      }"
+      :transform="`translate(${origin.x},${origin.y})`"
       class="projected-coordinates"
     >
       <g class="zoom-anim">
