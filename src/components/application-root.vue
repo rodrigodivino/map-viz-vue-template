@@ -3,10 +3,11 @@ import LeafletMap from "./leaflet-map.vue";
 import { defineComponent } from "vue";
 import * as L from "leaflet";
 import { LatLng } from "leaflet";
+import LeafletCanvas from "./leaflet-canvas.vue";
 
 export default defineComponent({
   name: "ApplicationRoot",
-  components: { LeafletMap },
+  components: { LeafletCanvas, LeafletMap },
   data() {
     return {
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
@@ -52,12 +53,30 @@ export default defineComponent({
             </g>
           </g>
         </template>
+
         <template #svg-foreground="projectedSVGProps">
           <g :transform="`translate(${pointInLayer.x},${pointInLayer.y})`">
             <g :style="projectedSVGProps.reverseZoomAnimScaleStyles">
               <text>Text Placeholder</text>
             </g>
           </g>
+        </template>
+
+        <template #canvas="props">
+          <LeafletCanvas
+            :width="props.width"
+            :height="props.height"
+            :zoom-anim-styles="props.zoomAnimStyles"
+          />
+        </template>
+
+        <template #canvas-foreground="props">
+          <LeafletCanvas
+            :width="props.width"
+            :height="props.height"
+            :zoom-anim-styles="props.zoomAnimStyles"
+          >
+          </LeafletCanvas>
         </template>
       </LeafletMap>
     </main>

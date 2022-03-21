@@ -322,13 +322,13 @@ export default defineComponent({
         height: currentBoundSizeInPixels.height + 'px',
       }"
     >
-      <canvas
-        ref="canvasRef"
+      <slot
+        name="canvas"
         :height="currentBoundSizeInPixels.height"
-        :style="zoomAnimStyles"
+        :zoom-anim-styles="zoomAnimStyles"
         :width="currentBoundSizeInPixels.width"
       >
-      </canvas>
+      </slot>
     </div>
   </Teleport>
   <Teleport v-if="canvasForegroundPane" :to="canvasForegroundPane">
@@ -339,13 +339,13 @@ export default defineComponent({
         height: currentBoundSizeInPixels.height + 'px',
       }"
     >
-      <canvas
-        ref="canvasForegroundRef"
+      <slot
+        name="canvas-foreground"
         :height="currentBoundSizeInPixels.height"
-        :style="zoomAnimStyles"
+        :zoom-anim-styles="zoomAnimStyles"
         :width="currentBoundSizeInPixels.width"
       >
-      </canvas>
+      </slot>
     </div>
   </Teleport>
 </template>
