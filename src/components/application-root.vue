@@ -11,6 +11,7 @@ export default defineComponent({
     return {
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
       canvas: undefined as HTMLCanvasElement | undefined,
+      canvasForeground: undefined as HTMLCanvasElement | undefined,
     };
   },
   methods: {
@@ -20,8 +21,12 @@ export default defineComponent({
       );
     },
 
-    handleCanvasMounted(payload: { canvas: HTMLCanvasElement }): void {
+    handleCanvasReady(payload: {
+      canvas: HTMLCanvasElement;
+      canvasForeground: HTMLCanvasElement;
+    }): void {
       this.canvas = payload.canvas;
+      this.canvasForeground = payload.canvasForeground;
     },
   },
 });
@@ -37,14 +42,20 @@ export default defineComponent({
     </header>
     <main class="l-centered main">
       <LeafletMap
-        @canvas-mounted="handleCanvasMounted"
+        @canvas-ready="handleCanvasReady"
         @viewreset="handleMapViewReset"
       >
-        <template #projected-svg="projectedSVGProps">
+        <template #svg="projectedSVGProps">
+          <g :transform="`translate(${pointInLayer.x},${pointInLayer.y})`">
+            <g :style="projectedSVGProps.reverseZoomAnimScaleStyles">
+              <circle fill="red" r="10"></circle>
+            </g>
+          </g>
+        </template>
+        <template #svg-foreground="projectedSVGProps">
           <g :transform="`translate(${pointInLayer.x},${pointInLayer.y})`">
             <g :style="projectedSVGProps.reverseZoomAnimScaleStyles">
               <text>Text Placeholder</text>
-              <circle fill="red" r="10"></circle>
             </g>
           </g>
         </template>

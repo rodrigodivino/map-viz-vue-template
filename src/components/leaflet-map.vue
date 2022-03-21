@@ -15,7 +15,10 @@ export default defineComponent({
     viewreset(payload: { map: L.Map }) {
       return !!payload;
     },
-    canvasMounted(payload: { canvas: HTMLCanvasElement }) {
+    canvasReady(payload: {
+      canvas: HTMLCanvasElement;
+      foregroundCanvas: HTMLCanvasElement;
+    }) {
       return !!payload;
     },
   },
@@ -30,11 +33,17 @@ export default defineComponent({
     };
   },
   computed: {
-    svgPane(): HTMLElement | undefined {
-      return this.map?.getPane("svgPane");
+    svgBackgroundPane(): HTMLElement | undefined {
+      return this.map?.getPane("svgBackgroundPane");
     },
-    canvasPane(): HTMLElement | undefined {
-      return this.map?.getPane("canvasPane");
+    svgForegroundPane(): HTMLElement | undefined {
+      return this.map?.getPane("svgForegroundPane");
+    },
+    canvasBackgroundPane(): HTMLElement | undefined {
+      return this.map?.getPane("canvasBackgroundPane");
+    },
+    canvasForegroundPane(): HTMLElement | undefined {
+      return this.map?.getPane("canvasForegroundPane");
     },
     currentBoundSizeInPixels(): { width: number; height: number } {
       const width =
@@ -137,33 +146,13 @@ export default defineComponent({
     this.handleViewReset();
 
     nextTick(() => {
-      this.$emit("canvasMounted", { canvas: this.$refs.canvasRef });
+      this.$emit("canvasReady", {
+        canvas: this.$refs.canvasRef,
+        canvasForeground: this.$refs.canvasForegroundRef,
+      });
     });
   },
   methods: {
-    renderCanvas(): void {
-      if (!this.$refs.canvasRef) {
-        return;
-      }
-
-      const ctx = (this.$refs.canvasRef as HTMLCanvasElement).getContext("2d");
-
-      if (!ctx) {
-        return;
-      }
-
-      ctx.clearRect(
-        0,
-        0,
-        this.currentBoundSizeInPixels.width,
-        this.currentBoundSizeInPixels.height
-      );
-      ctx.translate(
-        -this.currentBoundInPixels[0].x,
-        -this.currentBoundInPixels[0].y
-      );
-      ctx.resetTransform();
-    },
     handleViewReset(): void {
       if (!this.map) return;
       this.nextBoundInPixels = null;
@@ -210,9 +199,13 @@ export default defineComponent({
         13
       );
 
-      map.createPane("canvasPane").style.zIndex = "601";
-      map.createPane("svgPane").style.zIndex = "602";
+      map.createPane("canvasBackgroundPane").style.zIndex = "601";
+      map.createPane("svgBackgroundPane").style.zIndex = "602";
+
       map.createPane("labelsPane").style.zIndex = "850";
+
+      map.createPane("canvasForegroundPane").style.zIndex = "851";
+      map.createPane("svgForegroundPane").style.zIndex = "852";
 
       L.tileLayer(
         "https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.{ext}",
@@ -253,7 +246,7 @@ export default defineComponent({
 
 <template>
   <div id="map" ref="map" class="l-fit" />
-  <Teleport v-if="svgPane" :to="svgPane">
+  <Teleport v-if="svgBackgroundPane" :to="svgBackgroundPane">
     <div
       :style="{
         transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
@@ -280,14 +273,48 @@ export default defineComponent({
           <g class="zoom-anim">
             <slot
               :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
-              name="projected-svg"
+              name="svg"
             />
           </g>
         </g>
       </svg>
     </div>
   </Teleport>
-  <Teleport v-if="canvasPane" :to="canvasPane">
+  <Teleport v-if="svgForegroundPane" :to="svgForegroundPane">
+    <div
+      :style="{
+        transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
+        width: currentBoundSizeInPixels.width + 'px',
+        height: currentBoundSizeInPixels.height + 'px',
+      }"
+    >
+      <svg
+        :style="[
+          {
+            width: '100%',
+            height: '100%',
+          },
+          zoomAnimStyles,
+        ]"
+      >
+        <g
+          :style="{
+            transform: `translate(${-currentBoundInPixels[0]
+              .x}px,${-currentBoundInPixels[0].y}px)`,
+          }"
+          class="projected-coordinates"
+        >
+          <g class="zoom-anim">
+            <slot
+              :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
+              name="svg-foreground"
+            />
+          </g>
+        </g>
+      </svg>
+    </div>
+  </Teleport>
+  <Teleport v-if="canvasBackgroundPane" :to="canvasBackgroundPane">
     <div
       :style="{
         transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
@@ -297,6 +324,23 @@ export default defineComponent({
     >
       <canvas
         ref="canvasRef"
+        :height="currentBoundSizeInPixels.height"
+        :style="zoomAnimStyles"
+        :width="currentBoundSizeInPixels.width"
+      >
+      </canvas>
+    </div>
+  </Teleport>
+  <Teleport v-if="canvasForegroundPane" :to="canvasForegroundPane">
+    <div
+      :style="{
+        transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
+        width: currentBoundSizeInPixels.width + 'px',
+        height: currentBoundSizeInPixels.height + 'px',
+      }"
+    >
+      <canvas
+        ref="canvasForegroundRef"
         :height="currentBoundSizeInPixels.height"
         :style="zoomAnimStyles"
         :width="currentBoundSizeInPixels.width"
