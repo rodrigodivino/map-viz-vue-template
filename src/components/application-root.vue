@@ -1,9 +1,9 @@
 <script lang="ts">
 import LeafletMap from "./leaflet-map.vue";
-import { defineComponent } from "vue";
+import { defineComponent, nextTick } from "vue";
 import * as L from "leaflet";
 import { LatLng } from "leaflet";
-import CanvasPane from "./canvas-pane.vue";
+import CanvasPane, { CanvasDef } from "./canvas-pane.vue";
 import SVGPane from "./svg-pane.vue";
 
 export default defineComponent({
@@ -12,14 +12,62 @@ export default defineComponent({
   data() {
     return {
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
-      canvas: undefined as HTMLCanvasElement | undefined,
-      canvasForeground: undefined as HTMLCanvasElement | undefined,
+      firstCanvas: undefined as CanvasDef | undefined,
+      secondCanvas: undefined as CanvasDef | undefined,
     };
   },
   methods: {
     handleMapViewReset(payload: { map: L.Map }): void {
       this.pointInLayer = payload.map.latLngToLayerPoint(
         new LatLng(51.505, -0.09)
+      );
+
+      nextTick(() => {
+        this.renderFirstCanvas();
+        this.renderSecondCanvas();
+      });
+    },
+
+    handleFirstCanvasReady(payload: CanvasDef): void {
+      this.firstCanvas = payload;
+    },
+
+    handleSecondCanvasReady(payload: CanvasDef): void {
+      this.secondCanvas = payload;
+    },
+
+    // TODO: Create component to serve as template for canvas rendering with props.
+    // TODO: Create a "templates" folder with unused components to be copied and edited.
+    renderFirstCanvas() {
+      if (
+        !(this.firstCanvas && this.firstCanvas.canvas && this.firstCanvas.ctx)
+      )
+        return;
+
+      this.firstCanvas?.clear();
+      this.firstCanvas.ctx.fillRect(
+        this.pointInLayer.x - 20,
+        this.pointInLayer.y - 20,
+        20,
+        20
+      );
+    },
+    renderSecondCanvas() {
+      if (
+        !(
+          this.secondCanvas &&
+          this.secondCanvas.canvas &&
+          this.secondCanvas.ctx
+        )
+      )
+        return;
+
+      this.secondCanvas?.clear();
+      this.secondCanvas.ctx.fillRect(
+        this.pointInLayer.x,
+        this.pointInLayer.y,
+        20,
+        20
       );
     },
   },
@@ -37,6 +85,17 @@ export default defineComponent({
     <main class="l-centered main">
       <LeafletMap @viewreset="handleMapViewReset">
         <template #pane1="props">
+          <CanvasPane
+            :height="props.height"
+            :origin="props.origin"
+            :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
+            :width="props.width"
+            :zoom-anim-styles="props.zoomAnimStyles"
+            @canvas-ready="handleFirstCanvasReady"
+          />
+        </template>
+
+        <template #pane2="props">
           <SVGPane
             :height="props.height"
             :origin="props.origin"
@@ -68,16 +127,6 @@ export default defineComponent({
           </SVGPane>
         </template>
 
-        <template #pane2="props">
-          <CanvasPane
-            :height="props.height"
-            :origin="props.origin"
-            :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
-            :width="props.width"
-            :zoom-anim-styles="props.zoomAnimStyles"
-          />
-        </template>
-
         <template #foregroundPane2="props">
           <CanvasPane
             :height="props.height"
@@ -85,6 +134,7 @@ export default defineComponent({
             :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
             :width="props.width"
             :zoom-anim-styles="props.zoomAnimStyles"
+            @canvas-ready="handleSecondCanvasReady"
           />
         </template>
       </LeafletMap>
