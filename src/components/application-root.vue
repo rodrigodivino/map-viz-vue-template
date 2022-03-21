@@ -10,6 +10,7 @@ export default defineComponent({
   data() {
     return {
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
+      canvas: undefined as HTMLCanvasElement | undefined,
     };
   },
   methods: {
@@ -17,6 +18,10 @@ export default defineComponent({
       this.pointInLayer = payload.map.latLngToLayerPoint(
         new LatLng(51.505, -0.09)
       );
+    },
+
+    handleCanvasMounted(payload: { canvas: HTMLCanvasElement }): void {
+      this.canvas = payload.canvas;
     },
   },
 });
@@ -31,7 +36,10 @@ export default defineComponent({
       </h1>
     </header>
     <main class="l-centered main">
-      <LeafletMap @viewreset="(payload) => handleMapViewReset(payload)">
+      <LeafletMap
+        @canvas-mounted="handleCanvasMounted"
+        @viewreset="handleMapViewReset"
+      >
         <template #projected-svg="projectedSVGProps">
           <g :transform="`translate(${pointInLayer.x},${pointInLayer.y})`">
             <g :style="projectedSVGProps.reverseZoomAnimScaleStyles">

@@ -15,6 +15,9 @@ export default defineComponent({
     viewreset(payload: { map: L.Map }) {
       return !!payload;
     },
+    canvasMounted(payload: { canvas: HTMLCanvasElement }) {
+      return !!payload;
+    },
   },
   data() {
     return {
@@ -132,6 +135,10 @@ export default defineComponent({
     this.map.on("move", () => this.handleMapMove());
 
     this.handleViewReset();
+
+    nextTick(() => {
+      this.$emit("canvasMounted", { canvas: this.$refs.canvasRef });
+    });
   },
   methods: {
     renderCanvas(): void {
@@ -158,9 +165,9 @@ export default defineComponent({
       ctx.resetTransform();
     },
     handleViewReset(): void {
+      if (!this.map) return;
       this.nextBoundInPixels = null;
-      this.encode();
-      this.render();
+      this.currentBounds = this.map.getBounds().pad(1);
       this.$emit("viewreset", { map: this.map });
     },
     handleMapMove(): void {
@@ -239,19 +246,6 @@ export default defineComponent({
       L.control.scale().addTo(map);
 
       return map;
-    },
-
-    encode(): void {
-      if (!this.map) {
-        return;
-      }
-      this.currentBounds = this.map.getBounds().pad(1);
-    },
-
-    render(): void {
-      nextTick(() => {
-        this.renderCanvas();
-      });
     },
   },
 });
