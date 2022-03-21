@@ -43,8 +43,8 @@ export default defineComponent({
     </header>
     <main class="l-centered main">
       <LeafletMap
-        @canvas-ready="handleCanvasReady"
         @viewreset="handleMapViewReset"
+        @canvas-ready="handleCanvasReady"
       >
         <template #svg="projectedSVGProps">
           <g :transform="`translate(${pointInLayer.x},${pointInLayer.y})`">
@@ -64,17 +64,21 @@ export default defineComponent({
 
         <template #canvas="props">
           <LeafletCanvas
-            :width="props.width"
             :height="props.height"
+            :width="props.width"
             :zoom-anim-styles="props.zoomAnimStyles"
+            :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
+            :origin="props.origin"
           />
         </template>
 
         <template #canvas-foreground="props">
           <LeafletCanvas
-            :width="props.width"
             :height="props.height"
+            :width="props.width"
             :zoom-anim-styles="props.zoomAnimStyles"
+            :reverse-zoom-anim-scale-styles="props.reverseZoomAnimScaleStyles"
+            :origin="props.origin"
           >
           </LeafletCanvas>
         </template>

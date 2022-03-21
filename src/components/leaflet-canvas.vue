@@ -4,6 +4,10 @@ import { CSSProperties, defineComponent, nextTick, PropType } from "vue";
 export default defineComponent({
   name: "LeafletCanvas",
   props: {
+    origin: {
+      type: Object as PropType<{ x: number; y: number } | undefined>,
+      required: true,
+    },
     width: {
       type: Number,
       required: true,
@@ -13,15 +17,13 @@ export default defineComponent({
       required: true,
     },
     zoomAnimStyles: {
-      type: Object as PropType<CSSProperties>,
+      type: Object as PropType<CSSProperties | undefined>,
       required: true,
     },
-  },
-
-  mounted(): void {
-    nextTick(() => {
-      console.log("this.$refs.canvasRef", this.$refs.canvasRef);
-    });
+    reverseZoomAnimScaleStyles: {
+      type: Object as PropType<CSSProperties | undefined>,
+      required: true,
+    },
   },
 });
 </script>

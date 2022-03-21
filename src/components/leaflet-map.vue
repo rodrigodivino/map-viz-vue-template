@@ -154,7 +154,9 @@ export default defineComponent({
   },
   methods: {
     handleViewReset(): void {
-      if (!this.map) return;
+      if (!this.map) {
+        return;
+      }
       this.nextBoundInPixels = null;
       this.currentBounds = this.map.getBounds().pad(1);
       this.$emit("viewreset", { map: this.map });
@@ -323,10 +325,12 @@ export default defineComponent({
       }"
     >
       <slot
-        name="canvas"
         :height="currentBoundSizeInPixels.height"
-        :zoom-anim-styles="zoomAnimStyles"
+        :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
         :width="currentBoundSizeInPixels.width"
+        :zoom-anim-styles="zoomAnimStyles"
+        :origin="currentBoundInPixels[0]"
+        name="canvas"
       >
       </slot>
     </div>
@@ -340,10 +344,12 @@ export default defineComponent({
       }"
     >
       <slot
-        name="canvas-foreground"
         :height="currentBoundSizeInPixels.height"
-        :zoom-anim-styles="zoomAnimStyles"
+        :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
         :width="currentBoundSizeInPixels.width"
+        :zoom-anim-styles="zoomAnimStyles"
+        :origin="currentBoundInPixels[0]"
+        name="canvas-foreground"
       >
       </slot>
     </div>
