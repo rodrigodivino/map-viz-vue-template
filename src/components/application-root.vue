@@ -1,10 +1,25 @@
-<script>
+<script lang="ts">
 import LeafletMap from "./leaflet-map.vue";
+import { defineComponent } from "vue";
+import * as L from "leaflet";
+import { LatLng } from "leaflet";
 
-export default {
+export default defineComponent({
   name: "ApplicationRoot",
   components: { LeafletMap },
-};
+  data() {
+    return {
+      pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
+    };
+  },
+  methods: {
+    handleMapViewReset(payload: { map: L.Map }): void {
+      this.pointInLayer = payload.map.latLngToLayerPoint(
+        new LatLng(51.505, -0.09)
+      );
+    },
+  },
+});
 </script>
 
 <template>
@@ -16,11 +31,13 @@ export default {
       </h1>
     </header>
     <main class="l-centered main">
-      <LeafletMap>
+      <LeafletMap @viewreset="(payload) => handleMapViewReset(payload)">
         <template #projected-svg="projectedSVGProps">
-          <g :style="projectedSVGProps.reverseZoomAnimScaleStyles">
-            <text>Text Placeholder</text>
-            <circle fill="red" r="10"></circle>
+          <g :transform="`translate(${pointInLayer.x},${pointInLayer.y})`">
+            <g :style="projectedSVGProps.reverseZoomAnimScaleStyles">
+              <text>Text Placeholder</text>
+              <circle fill="red" r="10"></circle>
+            </g>
           </g>
         </template>
       </LeafletMap>

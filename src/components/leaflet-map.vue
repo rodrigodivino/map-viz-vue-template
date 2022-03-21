@@ -11,10 +11,14 @@ export default defineComponent({
       default: new LatLng(51.505, -0.09),
     },
   },
+  emits: {
+    viewreset(payload: { map: L.Map }) {
+      return !!payload;
+    },
+  },
   data() {
     return {
       map: undefined as L.Map | undefined,
-      pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
       currentBounds: undefined as LatLngBounds | undefined,
       nextBounds: undefined as LatLngBounds | undefined,
       nextBoundInPixels: null as
@@ -151,13 +155,13 @@ export default defineComponent({
         -this.currentBoundInPixels[0].x,
         -this.currentBoundInPixels[0].y
       );
-      ctx.fillRect(this.pointInLayer.x - 25, this.pointInLayer.y - 25, 50, 50);
       ctx.resetTransform();
     },
     handleViewReset(): void {
       this.nextBoundInPixels = null;
       this.encode();
       this.render();
+      this.$emit("viewreset", { map: this.map });
     },
     handleMapMove(): void {
       if (!this.map) {
@@ -237,17 +241,11 @@ export default defineComponent({
       return map;
     },
 
-    encodePointInLayer(): { x: number; y: number } {
-      return this.map?.latLngToLayerPoint(this.$props.center) ?? { x: 0, y: 0 };
-    },
-
     encode(): void {
       if (!this.map) {
         return;
       }
       this.currentBounds = this.map.getBounds().pad(1);
-
-      this.pointInLayer = this.encodePointInLayer();
     },
 
     render(): void {
@@ -286,16 +284,10 @@ export default defineComponent({
           class="projected-coordinates"
         >
           <g class="zoom-anim">
-            <g
-              :style="{
-                transform: `translate(${pointInLayer.x}px,${pointInLayer.y}px)`,
-              }"
-            >
-              <slot
-                name="projected-svg"
-                :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
-              />
-            </g>
+            <slot
+              :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
+              name="projected-svg"
+            />
           </g>
         </g>
       </svg>
