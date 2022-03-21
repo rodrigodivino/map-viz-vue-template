@@ -1,7 +1,12 @@
 <script lang="ts">
 import * as L from "leaflet";
 import { LatLng, LatLngBounds } from "leaflet";
-import { CSSProperties, defineComponent, nextTick } from "vue";
+import { CSSProperties, defineComponent } from "vue";
+
+const panes = new Array(10).fill(0).map((d, i) => "pane" + (i + 1));
+const foregroundPanes = new Array(10)
+  .fill(0)
+  .map((d, i) => "foregroundPane" + (i + 1));
 
 export default defineComponent({
   name: "LeafletMap",
@@ -13,12 +18,6 @@ export default defineComponent({
   },
   emits: {
     viewreset(payload: { map: L.Map }) {
-      return !!payload;
-    },
-    canvasReady(payload: {
-      canvas: HTMLCanvasElement;
-      foregroundCanvas: HTMLCanvasElement;
-    }) {
       return !!payload;
     },
   },
@@ -33,18 +32,15 @@ export default defineComponent({
     };
   },
   computed: {
-    svgBackgroundPane(): HTMLElement | undefined {
-      return this.map?.getPane("svgBackgroundPane");
+    panes(): { name: string; pane: HTMLElement | undefined }[] {
+      return [...panes, ...foregroundPanes].map((pane) => {
+        return {
+          name: pane,
+          pane: this.map?.getPane(pane),
+        };
+      });
     },
-    svgForegroundPane(): HTMLElement | undefined {
-      return this.map?.getPane("svgForegroundPane");
-    },
-    canvasBackgroundPane(): HTMLElement | undefined {
-      return this.map?.getPane("canvasBackgroundPane");
-    },
-    canvasForegroundPane(): HTMLElement | undefined {
-      return this.map?.getPane("canvasForegroundPane");
-    },
+
     currentBoundSizeInPixels(): { width: number; height: number } {
       const width =
         this.currentBoundInPixels[1].x - this.currentBoundInPixels[0].x;
@@ -144,13 +140,6 @@ export default defineComponent({
     this.map.on("move", () => this.handleMapMove());
 
     this.handleViewReset();
-
-    nextTick(() => {
-      this.$emit("canvasReady", {
-        canvas: this.$refs.canvasRef,
-        canvasForeground: this.$refs.canvasForegroundRef,
-      });
-    });
   },
   methods: {
     handleViewReset(): void {
@@ -201,13 +190,15 @@ export default defineComponent({
         13
       );
 
-      map.createPane("canvasBackgroundPane").style.zIndex = "601";
-      map.createPane("svgBackgroundPane").style.zIndex = "602";
+      panes.forEach((pane, i) => {
+        map.createPane(pane).style.zIndex = `${601 + i}`;
+      });
 
       map.createPane("labelsPane").style.zIndex = "850";
 
-      map.createPane("canvasForegroundPane").style.zIndex = "851";
-      map.createPane("svgForegroundPane").style.zIndex = "852";
+      foregroundPanes.forEach((pane, i) => {
+        map.createPane(pane).style.zIndex = `${851 + i}`;
+      });
 
       L.tileLayer(
         "https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.{ext}",
@@ -248,94 +239,34 @@ export default defineComponent({
 
 <template>
   <div id="map" ref="map" class="l-fit" />
-  <Teleport v-if="svgBackgroundPane" :to="svgBackgroundPane">
-    <div
-      :style="{
-        transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
-        width: currentBoundSizeInPixels.width + 'px',
-        height: currentBoundSizeInPixels.height + 'px',
-      }"
+  <template v-for="paneDefinition in panes">
+    <Teleport
+      v-if="paneDefinition.pane"
+      :key="paneDefinition.name"
+      :to="paneDefinition.pane"
     >
-      <slot
-        :height="currentBoundSizeInPixels.height"
-        :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
-        :width="currentBoundSizeInPixels.width"
-        :zoom-anim-styles="zoomAnimStyles"
-        :origin="{
-          x: -currentBoundInPixels[0].x,
-          y: -currentBoundInPixels[0].y,
+      <div
+        :style="{
+          transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
+          width: currentBoundSizeInPixels.width + 'px',
+          height: currentBoundSizeInPixels.height + 'px',
         }"
-        name="svg"
       >
-      </slot>
-    </div>
-  </Teleport>
-  <Teleport v-if="svgForegroundPane" :to="svgForegroundPane">
-    <div
-      :style="{
-        transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
-        width: currentBoundSizeInPixels.width + 'px',
-        height: currentBoundSizeInPixels.height + 'px',
-      }"
-    >
-      <slot
-        :height="currentBoundSizeInPixels.height"
-        :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
-        :width="currentBoundSizeInPixels.width"
-        :zoom-anim-styles="zoomAnimStyles"
-        :origin="{
-          x: -currentBoundInPixels[0].x,
-          y: -currentBoundInPixels[0].y,
-        }"
-        name="svg-foreground"
-      >
-      </slot>
-    </div>
-  </Teleport>
-  <Teleport v-if="canvasBackgroundPane" :to="canvasBackgroundPane">
-    <div
-      :style="{
-        transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
-        width: currentBoundSizeInPixels.width + 'px',
-        height: currentBoundSizeInPixels.height + 'px',
-      }"
-    >
-      <slot
-        :height="currentBoundSizeInPixels.height"
-        :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
-        :width="currentBoundSizeInPixels.width"
-        :zoom-anim-styles="zoomAnimStyles"
-        :origin="{
-          x: -currentBoundInPixels[0].x,
-          y: -currentBoundInPixels[0].y,
-        }"
-        name="canvas"
-      >
-      </slot>
-    </div>
-  </Teleport>
-  <Teleport v-if="canvasForegroundPane" :to="canvasForegroundPane">
-    <div
-      :style="{
-        transform: `translate(${currentBoundInPixels[0].x}px,${currentBoundInPixels[0].y}px)`,
-        width: currentBoundSizeInPixels.width + 'px',
-        height: currentBoundSizeInPixels.height + 'px',
-      }"
-    >
-      <slot
-        :height="currentBoundSizeInPixels.height"
-        :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
-        :width="currentBoundSizeInPixels.width"
-        :zoom-anim-styles="zoomAnimStyles"
-        :origin="{
-          x: -currentBoundInPixels[0].x,
-          y: -currentBoundInPixels[0].y,
-        }"
-        name="canvas-foreground"
-      >
-      </slot>
-    </div>
-  </Teleport>
+        <slot
+          :height="currentBoundSizeInPixels.height"
+          :name="paneDefinition.name"
+          :origin="{
+            x: -currentBoundInPixels[0].x,
+            y: -currentBoundInPixels[0].y,
+          }"
+          :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
+          :width="currentBoundSizeInPixels.width"
+          :zoom-anim-styles="zoomAnimStyles"
+        >
+        </slot>
+      </div>
+    </Teleport>
+  </template>
 </template>
 
 <style scoped></style>

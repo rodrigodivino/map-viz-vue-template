@@ -22,14 +22,6 @@ export default defineComponent({
         new LatLng(51.505, -0.09)
       );
     },
-
-    handleCanvasReady(payload: {
-      canvas: HTMLCanvasElement;
-      canvasForeground: HTMLCanvasElement;
-    }): void {
-      this.canvas = payload.canvas;
-      this.canvasForeground = payload.canvasForeground;
-    },
   },
 });
 </script>
@@ -43,11 +35,8 @@ export default defineComponent({
       </h1>
     </header>
     <main class="l-centered main">
-      <LeafletMap
-        @viewreset="handleMapViewReset"
-        @canvas-ready="handleCanvasReady"
-      >
-        <template #svg="props">
+      <LeafletMap @viewreset="handleMapViewReset">
+        <template #pane1="props">
           <LeafletSVG
             :height="props.height"
             :origin="props.origin"
@@ -63,7 +52,7 @@ export default defineComponent({
           </LeafletSVG>
         </template>
 
-        <template #svg-foreground="props">
+        <template #foregroundPane1="props">
           <LeafletSVG
             :height="props.height"
             :origin="props.origin"
@@ -79,7 +68,7 @@ export default defineComponent({
           </LeafletSVG>
         </template>
 
-        <template #canvas="props">
+        <template #pane2="props">
           <LeafletCanvas
             :height="props.height"
             :origin="props.origin"
@@ -89,7 +78,7 @@ export default defineComponent({
           />
         </template>
 
-        <template #canvas-foreground="props">
+        <template #foregroundPane2="props">
           <LeafletCanvas
             :height="props.height"
             :origin="props.origin"
