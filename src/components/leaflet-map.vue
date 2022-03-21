@@ -3,11 +3,6 @@ import * as L from "leaflet";
 import { LatLng, LatLngBounds } from "leaflet";
 import { CSSProperties, defineComponent } from "vue";
 
-const panes = new Array(10).fill(0).map((d, i) => "pane" + (i + 1));
-const foregroundPanes = new Array(10)
-  .fill(0)
-  .map((d, i) => "foregroundPane" + (i + 1));
-
 export default defineComponent({
   name: "LeafletMap",
   props: {
@@ -33,12 +28,14 @@ export default defineComponent({
   },
   computed: {
     panes(): { name: string; pane: HTMLElement | undefined }[] {
-      return [...panes, ...foregroundPanes].map((pane) => {
-        return {
-          name: pane,
-          pane: this.map?.getPane(pane),
-        };
-      });
+      return Object.entries(this.map?.getPanes() ?? []).map(
+        ([pane, element]) => {
+          return {
+            name: pane,
+            pane: element,
+          };
+        }
+      );
     },
 
     currentBoundSizeInPixels(): { width: number; height: number } {
@@ -190,15 +187,21 @@ export default defineComponent({
         13
       );
 
-      panes.forEach((pane, i) => {
-        map.createPane(pane).style.zIndex = `${601 + i}`;
-      });
+      new Array(5)
+        .fill(0)
+        .map((d, i) => "pane" + (i + 1))
+        .forEach((pane, i) => {
+          map.createPane(pane).style.zIndex = `${601 + i}`;
+        });
 
       map.createPane("labelsPane").style.zIndex = "850";
 
-      foregroundPanes.forEach((pane, i) => {
-        map.createPane(pane).style.zIndex = `${851 + i}`;
-      });
+      new Array(5)
+        .fill(0)
+        .map((d, i) => "foregroundPane" + (i + 1))
+        .forEach((pane, i) => {
+          map.createPane(pane).style.zIndex = `${851 + i}`;
+        });
 
       L.tileLayer(
         "https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.{ext}",
