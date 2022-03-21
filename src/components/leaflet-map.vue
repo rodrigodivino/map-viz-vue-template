@@ -119,19 +119,15 @@ export default defineComponent({
     },
   },
 
-  // TODO: Use nextBoundInPixels change to trigger zoom animations for meshes and points
-  // TODO: Find the transform CSS that maps a currentBoundInPixels to nextBoundInPixels, including scale (will work for meshes)
-  // TODO: Find the inverse scale CSS to apply to elements that don't want to scale on zoom anim (to improve points)
-
   mounted: function () {
     this.map = this.getInitializedMap();
 
     this.map.on("zoomanim", (e) => this.handleZoomAnim(e));
-    this.map.on("viewreset", () => this.handleViewUpdate());
-    this.map.on("zoomend", () => this.handleViewUpdate());
+    this.map.on("viewreset", () => this.handleViewReset());
+    this.map.on("zoomend", () => this.handleViewReset());
     this.map.on("move", () => this.handleMapMove());
 
-    this.handleViewUpdate();
+    this.handleViewReset();
   },
   methods: {
     renderCanvas(): void {
@@ -158,7 +154,7 @@ export default defineComponent({
       ctx.fillRect(this.pointInLayer.x - 25, this.pointInLayer.y - 25, 50, 50);
       ctx.resetTransform();
     },
-    handleViewUpdate(): void {
+    handleViewReset(): void {
       this.nextBoundInPixels = null;
       this.encode();
       this.render();
@@ -168,8 +164,7 @@ export default defineComponent({
         return;
       }
       if (!this.currentBounds?.contains(this.map.getBounds())) {
-        console.log("going out of bounds, re-rendering.");
-        this.handleViewUpdate();
+        this.handleViewReset();
       }
     },
     handleZoomAnim(e: L.ZoomAnimEvent): void {
@@ -262,8 +257,6 @@ export default defineComponent({
     },
   },
 });
-
-//transition: 'transform 0.25s cubic-bezier(0,0,0.25,1)',
 </script>
 
 <template>
@@ -285,14 +278,6 @@ export default defineComponent({
           zoomAnimStyles,
         ]"
       >
-        <g class="absolute-coordinates">
-          <rect
-            :height="currentBoundSizeInPixels.height"
-            :width="currentBoundSizeInPixels.width"
-            fill="lightgray"
-            opacity="0.5"
-          ></rect>
-        </g>
         <g
           :style="{
             transform: `translate(${-currentBoundInPixels[0]
@@ -306,10 +291,10 @@ export default defineComponent({
                 transform: `translate(${pointInLayer.x}px,${pointInLayer.y}px)`,
               }"
             >
-              <g :style="reverseZoomAnimScaleStyles">
-                <text>Text Placeholder</text>
-                <circle r="10"></circle>
-              </g>
+              <slot
+                name="projected-svg"
+                :reverse-zoom-anim-scale-styles="reverseZoomAnimScaleStyles"
+              />
             </g>
           </g>
         </g>

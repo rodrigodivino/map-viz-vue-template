@@ -1,18 +1,29 @@
 <script>
 import LeafletMap from "./leaflet-map.vue";
+
 export default {
   name: "ApplicationRoot",
-  components: {LeafletMap},
-}
+  components: { LeafletMap },
+};
 </script>
 
 <template>
   <div class="l-fit application-root">
     <header class="l-centered header">
-      <h1>Data viz vue template: Edit this component (application-root) to create your web application</h1>
+      <h1>
+        Data viz vue template: Edit this component (application-root) to create
+        your web application
+      </h1>
     </header>
     <main class="l-centered main">
-      <LeafletMap/>
+      <LeafletMap>
+        <template #projected-svg="projectedSVGProps">
+          <g :style="projectedSVGProps.reverseZoomAnimScaleStyles">
+            <text>Text Placeholder</text>
+            <circle fill="red" r="10"></circle>
+          </g>
+        </template>
+      </LeafletMap>
     </main>
     <footer class="l-centered footer">Footer</footer>
   </div>
