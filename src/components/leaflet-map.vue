@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as L from "leaflet";
-import { LatLng } from "leaflet";
+import { LatLng, LatLngBounds } from "leaflet";
 import { CSSProperties, defineComponent, nextTick } from "vue";
 
 export default defineComponent({
@@ -15,6 +15,7 @@ export default defineComponent({
     return {
       map: undefined as L.Map | undefined,
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
+      currentBounds: undefined as LatLngBounds | undefined,
       currentBoundInPixels: [
         { x: 0, y: 0 },
         { x: 0, y: 0 },
@@ -94,6 +95,7 @@ export default defineComponent({
     this.map.on("zoomanim", (e) => this.handleZoomAnim(e));
     this.map.on("viewreset", () => this.handleViewUpdate());
     this.map.on("zoomend", () => this.handleViewUpdate());
+    this.map.on("move", () => this.handleMapMove());
 
     this.handleViewUpdate();
   },
@@ -129,31 +131,40 @@ export default defineComponent({
       this.encode();
       this.render();
     },
+    handleMapMove(): void {
+      if (!this.map) {
+        return;
+      }
+      if (!this.currentBounds?.contains(this.map.getBounds())) {
+        console.log("going out of bounds, re-rendering.");
+        this.handleViewUpdate();
+      }
+    },
     handleZoomAnim(e: L.ZoomAnimEvent): void {
       if (!this.map) {
         return;
       }
 
-      const currentBounds = this.$props.center.toBounds(5000);
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      const topLeftPoint = this.map._latLngToNewLayerPoint(
-        currentBounds.getNorthWest(),
-        e.zoom,
-        e.center
-      );
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      const bottomRightPoint = this.map._latLngToNewLayerPoint(
-        currentBounds.getSouthEast(),
-        e.zoom,
-        e.center
-      );
-
-      this.nextBoundInPixels = [topLeftPoint, bottomRightPoint].map((p) => ({
-        x: Math.round(p.x),
-        y: Math.round(p.y),
-      })) as [{ x: number; y: number }, { x: number; y: number }];
+      // const currentBounds = this.map.getBounds().pad(0.5);
+      // // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // // @ts-ignore
+      // const topLeftPoint = this.map._latLngToNewLayerPoint(
+      //   currentBounds.getNorthWest(),
+      //   e.zoom,
+      //   e.center
+      // );
+      // // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // // @ts-ignore
+      // const bottomRightPoint = this.map._latLngToNewLayerPoint(
+      //   currentBounds.getSouthEast(),
+      //   e.zoom,
+      //   e.center
+      // );
+      //
+      // this.nextBoundInPixels = [topLeftPoint, bottomRightPoint].map((p) => ({
+      //   x: Math.round(p.x),
+      //   y: Math.round(p.y),
+      // })) as [{ x: number; y: number }, { x: number; y: number }];
     },
 
     getInitializedMap(): L.Map {
@@ -173,7 +184,7 @@ export default defineComponent({
             'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           subdomains: "abcd",
           minZoom: 12,
-          maxZoom: 16,
+          maxZoom: 160,
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           ext: "png",
@@ -187,7 +198,7 @@ export default defineComponent({
             'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           subdomains: "abcd",
           minZoom: 12,
-          maxZoom: 16,
+          maxZoom: 160,
           pane: "labelsPane",
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
@@ -214,12 +225,14 @@ export default defineComponent({
         ];
       }
 
-      const currentBounds = this.$props.center.toBounds(5000);
+      this.currentBounds = this.map.getBounds().pad(1);
+
+      console.log("this.currentBounds", this.currentBounds);
       const topLeftPoint = this.map.latLngToLayerPoint(
-        currentBounds.getNorthWest()
+        this.currentBounds.getNorthWest()
       );
       const bottomRightPoint = this.map.latLngToLayerPoint(
-        currentBounds.getSouthEast()
+        this.currentBounds.getSouthEast()
       );
       return [topLeftPoint, bottomRightPoint];
     },
@@ -303,8 +316,8 @@ export default defineComponent({
       <canvas
         ref="canvasRef"
         :height="currentBoundSizeInPixels.height"
-        :width="currentBoundSizeInPixels.width"
         :style="zoomAnimStyles"
+        :width="currentBoundSizeInPixels.width"
       >
       </canvas>
     </div>
