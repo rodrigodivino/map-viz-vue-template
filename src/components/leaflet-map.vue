@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as L from "leaflet";
 import { LatLng } from "leaflet";
-import { defineComponent, nextTick } from "vue";
+import { CSSProperties, defineComponent, nextTick } from "vue";
 
 export default defineComponent({
   name: "LeafletMap",
@@ -15,6 +15,7 @@ export default defineComponent({
     return {
       map: undefined as L.Map | undefined,
       pointInLayer: { x: 0, y: 0 } as { x: number; y: number },
+      zoomAnimStyles: {} as CSSProperties,
       currentBoundInPixels: [
         { x: 0, y: 0 },
         { x: 0, y: 0 },
@@ -85,12 +86,34 @@ export default defineComponent({
       ctx.resetTransform();
     },
     handleViewUpdate(): void {
+      this.zoomAnimStyles = {
+        transform: "translate(0,0)scale(1)",
+        transition: "transform 0s",
+        transformOrigin: "center",
+      };
       this.encodeCurrentBoundInPixels();
       this.encode();
       this.render();
     },
     handleZoomAnim(e: L.ZoomAnimEvent): void {
-      this.updateNextBounds(e);
+      // this.updateNextBounds(e);
+      //
+      // const newSize = this.nextBoundInPixels[1].x - this.nextBoundInPixels[0].x;
+      // const oldSize =
+      //   this.currentBoundInPixels[1].x - this.currentBoundInPixels[0].x;
+      // const scale = newSize / oldSize;
+      //
+      // const xTranslation =
+      //   (this.nextBoundInPixels[0].x - this.currentBoundInPixels[0].x) * scale;
+      // const yTranslation =
+      //   (this.nextBoundInPixels[0].y - this.currentBoundInPixels[0].y) * scale;
+      //
+      // console.log("scale", scale);
+      // this.zoomAnimStyles = {
+      //   transform: `translate(${xTranslation}px,${yTranslation}px)scale(${scale})`,
+      //   transformOrigin: "center",
+      //   transition: "transform 0s cubic-bezier(0,0,0.25,1)",
+      // };
     },
 
     getInitializedMap(): L.Map {
@@ -214,7 +237,7 @@ export default defineComponent({
         height: currentBoundSizeInPixels.height + 'px',
       }"
     >
-      <g class="absolute-coordinates">
+      <g class="absolute-coordinates" :style="zoomAnimStyles">
         <rect
           :height="currentBoundSizeInPixels.height"
           :width="currentBoundSizeInPixels.width"
@@ -229,15 +252,15 @@ export default defineComponent({
         }"
         class="projected-coordinates"
       >
-        <g
-          :style="{
-            transform: `translate(${pointInLayer.x}px,${pointInLayer.y}px)`,
-            // transition: 'transform 0.25s cubic-bezier(0,0,0.25,1)',
-            // transformOrigin: 'top left',
-          }"
-        >
-          <text>Text Placeholder</text>
-          <circle r="10"></circle>
+        <g class="zoom-anim" :style="zoomAnimStyles">
+          <g
+            :style="{
+              transform: `translate(${pointInLayer.x}px,${pointInLayer.y}px)`,
+            }"
+          >
+            <text>Text Placeholder</text>
+            <circle r="10"></circle>
+          </g>
         </g>
       </g>
     </svg>
